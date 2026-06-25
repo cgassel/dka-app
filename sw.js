@@ -3,9 +3,13 @@
 // Caches static assets (HTML/CSS/JS/icons) so the app shell loads offline.
 // API calls to Apps Script are NOT cached — those always need a live network
 // connection since they read/write live booking data.
+//
+// NOTE: skipWaiting/clients.claim were removed — these can cause repeated
+// reload loops when a service worker updates while a tab is open. The
+// service worker now activates normally on next load instead.
 // ============================================================================
 
-const CACHE_NAME = 'dka-app-v1';
+const CACHE_NAME = 'dka-app-v2';
 const STATIC_ASSETS = [
   './index.html',
   './agent-dashboard.html',
@@ -21,10 +25,15 @@ const STATIC_ASSETS = [
 self.addEventListener('install', function(event) {
   event.waitUntil(
     caches.open(CACHE_NAME).then(function(cache) {
-      return cache.addAll(STATIC_ASSETS);
+      return Promise.all(
+        STATIC_ASSETS.map(function(url) {
+          return cache.add(url).catch(function(err) {
+            console.warn('Service worker: failed to cache', url, err);
+          });
+        })
+      );
     })
   );
-  self.skipWaiting();
 });
 
 self.addEventListener('activate', function(event) {
@@ -36,21 +45,17 @@ self.addEventListener('activate', function(event) {
       );
     })
   );
-  self.clients.claim();
 });
 
 self.addEventListener('fetch', function(event) {
-  // Never cache Apps Script API calls — always go to network for live data
-  if (event.request.url.indexOf('script.google.com') !== -1) {
-    return;
-  }
+  if (event.request.method !== 'GET') return;
+  if (event.request.url.indexOf('script.google.com') !== -1) return;
 
   event.respondWith(
     caches.match(event.request).then(function(cached) {
       if (cached) return cached;
       return fetch(event.request).then(function(response) {
-        // Cache new static assets as they're fetched (same-origin only)
-        if (event.request.method === 'GET' && response.ok && event.request.url.indexOf(self.location.origin) === 0) {
+        if (response.ok && event.request.url.indexOf(self.location.origin) === 0) {
           var responseClone = response.clone();
           caches.open(CACHE_NAME).then(function(cache) {
             cache.put(event.request, responseClone);
@@ -58,7 +63,6 @@ self.addEventListener('fetch', function(event) {
         }
         return response;
       }).catch(function() {
-        // Offline and not cached — nothing more we can do for this request
         return cached;
       });
     })
