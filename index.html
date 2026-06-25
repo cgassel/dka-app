@@ -131,13 +131,8 @@
 
   <script src="api.js"></script>
   <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', function() {
-        navigator.serviceWorker.register('sw.js').catch(function(err) {
-          console.error('Service worker registration failed:', err);
-        });
-      });
-    }
+    // Service worker registration temporarily disabled for debugging a reload loop.
+    // Will re-enable once confirmed this isn't the cause.
 
     function updateLoginFields() {
       var t = document.getElementById('userType').value;
