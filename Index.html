@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#A07018">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="DK Agency">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <title>Dave Kalz Agency</title>
+  <style>
+    :root {
+      --cream:#FAF7F0; --cream2:#F2EDE4; --border:#D4C4A0;
+      --muted:#6b5e48; --dim:#a09070; --text:#1a1408; --error:#8B2000;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family:'Inter',-apple-system,sans-serif;
+      min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;
+      background:linear-gradient(160deg,#1a1208 0%,#2e1f0a 35%,#3d2a0e 50%,#2a1f0a 70%,#120d04 100%);
+    }
+    .card {
+      background:var(--cream); border-radius:16px; max-width:420px; width:100%;
+      overflow:hidden;
+      box-shadow:0 0 0 1px rgba(200,150,50,0.2),0 8px 32px rgba(0,0,0,0.4),0 32px 80px rgba(0,0,0,0.3);
+    }
+    .card-top {
+      position:relative; padding:44px 40px 36px; text-align:center; overflow:hidden;
+      background:linear-gradient(160deg,#3a2608 0%,#6a4a10 10%,#a07020 20%,#d4a030 30%,#f0c050 42%,#e8b838 50%,#c08820 60%,#906010 70%,#6a4810 82%,#4a3008 90%,#2e1e06 100%);
+    }
+    .card-top::before {
+      content:''; position:absolute; inset:0; pointer-events:none;
+      background:linear-gradient(110deg,transparent 15%,rgba(255,255,255,0.04) 30%,rgba(255,255,255,0.13) 48%,rgba(255,255,255,0.05) 62%,transparent 78%);
+    }
+    .card-top::after {
+      content:''; position:absolute; bottom:0; left:0; right:0; height:44px; pointer-events:none;
+      background:linear-gradient(to bottom,transparent,var(--cream));
+    }
+    .logo-img {
+      position:relative; z-index:1;
+      width:150px; height:150px; object-fit:contain; display:block; margin:0 auto 18px;
+    }
+    .agency-name { position:relative; z-index:1; font-size:1.1rem; font-weight:700; color:#fff; letter-spacing:0.4px; text-shadow:0 1px 6px rgba(0,0,0,0.5); margin-bottom:5px; }
+    .agency-tag  { position:relative; z-index:1; font-size:0.62rem; font-weight:600; letter-spacing:3px; text-transform:uppercase; color:rgba(255,240,200,0.85); text-shadow:0 1px 3px rgba(0,0,0,0.4); }
+    .card-body { padding:24px 36px 32px; }
+    .admin-banner { display:none; background:linear-gradient(135deg,#5a3c0c,#4a3008); color:#f0d080; text-align:center; font-size:0.67rem; font-weight:600; letter-spacing:2px; text-transform:uppercase; padding:8px 14px; border-radius:6px; margin-bottom:20px; }
+    .form-group { margin-bottom:16px; }
+    label { display:block; font-size:0.68rem; font-weight:600; letter-spacing:0.8px; text-transform:uppercase; color:var(--muted); margin-bottom:7px; }
+    input, select {
+      width:100%; padding:11px 14px; background:#fff; border:1.5px solid var(--border);
+      border-radius:8px; font-size:0.9rem; font-family:'Inter',sans-serif; color:var(--text);
+      transition:border-color 0.2s,box-shadow 0.2s; appearance:none; -webkit-appearance:none;
+    }
+    input::placeholder { color:var(--dim); }
+    input:focus, select:focus { outline:none; border-color:#a07020; box-shadow:0 0 0 3px rgba(160,112,32,0.12); }
+    select {
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%236b5e48' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");
+      background-repeat:no-repeat; background-position:right 14px center; padding-right:36px;
+    }
+    select option { background:#fff; color:var(--text); }
+    .btn {
+      width:100%; padding:13px;
+      background:linear-gradient(160deg,#3a2608 0%,#6a4a10 10%,#a07020 20%,#d4a030 30%,#f0c050 42%,#e8b838 50%,#c08820 60%,#906010 70%,#6a4810 82%,#4a3008 90%,#2e1e06 100%);
+      color:#111008; border:none; border-radius:8px;
+      font-size:0.8rem; font-weight:800; font-family:'Inter',sans-serif;
+      letter-spacing:2px; text-transform:uppercase; cursor:pointer; transition:all 0.22s; margin-top:6px;
+      box-shadow:0 2px 12px rgba(80,50,10,0.35), inset 0 1px 0 rgba(255,220,100,0.2);
+    }
+    .btn:hover:not(:disabled) { filter:brightness(1.08); box-shadow:0 4px 20px rgba(80,50,10,0.45); transform:translateY(-1px); }
+    .btn:active:not(:disabled) { transform:translateY(0); }
+    .btn:disabled { opacity:0.35; cursor:not-allowed; box-shadow:none; }
+    .btn.admin-btn { background:linear-gradient(135deg,#1a1408,#2e2010,#1a1408); color:#d4a030; box-shadow:0 2px 8px rgba(0,0,0,0.3); }
+    .btn.admin-btn:hover:not(:disabled) { background:linear-gradient(135deg,#2e2010,#3e3018,#2e2010); color:#f0c050; }
+    .error   { color:var(--error); background:#fff5f0; border:1px solid rgba(139,32,0,0.18); padding:10px 13px; border-radius:7px; margin-top:12px; display:none; font-size:0.82rem; font-weight:500; }
+    .success { color:#27795b; background:#f0faf6; border:1px solid rgba(39,121,91,0.18); padding:10px 13px; border-radius:7px; margin-top:12px; display:none; font-size:0.82rem; }
+    .loading { display:none; text-align:center; padding:22px 0; }
+    .spinner { border:2px solid var(--border); border-top:2px solid #a07020; border-radius:50%; width:30px; height:30px; animation:spin 0.8s linear infinite; margin:0 auto 10px; }
+    .spinner.admin-spinner { border-top-color:#4a3008; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .loading-text { font-size:0.72rem; font-weight:500; letter-spacing:1px; text-transform:uppercase; color:var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="card-top">
+      <img class="logo-img" src="icons/dka-logo.png" alt="Dave Kalz Agency">
+      <div class="agency-name">Dave Kalz Agency</div>
+      <div class="agency-tag">Booking System</div>
+    </div>
+    <div class="card-body">
+      <form id="loginForm" onsubmit="return handleLogin(event)">
+        <div class="admin-banner" id="adminBanner">&#x1F512; Administrator Access</div>
+
+        <div class="form-group">
+          <label for="userType">Sign in as</label>
+          <select id="userType" required onchange="updateLoginFields()">
+            <option value="">— Select account type —</option>
+            <option value="agent">Booking Agent</option>
+            <option value="venue">Venue</option>
+            <option value="band">Band</option>
+            <option value="admin">Administrator</option>
+          </select>
+        </div>
+
+        <div id="credentialFields" style="display:none;">
+          <div class="form-group">
+            <label for="username" id="usernameLabel">Username</label>
+            <input type="text" id="username" autocomplete="username" placeholder="Enter your username">
+          </div>
+          <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" autocomplete="current-password" placeholder="Enter your password">
+          </div>
+        </div>
+
+        <button type="submit" class="btn" id="loginBtn" disabled>Sign In</button>
+        <div class="error"   id="errorMsg"></div>
+        <div class="success" id="successMsg"></div>
+        <div class="loading" id="loading">
+          <div class="spinner" id="spinner"></div>
+          <div class="loading-text" id="loadingText">Authenticating…</div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="api.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('sw.js').catch(function(err) {
+          console.error('Service worker registration failed:', err);
+        });
+      });
+    }
+
+    function updateLoginFields() {
+      var t = document.getElementById('userType').value;
+      var creds = document.getElementById('credentialFields');
+      var banner = document.getElementById('adminBanner');
+      var btn = document.getElementById('loginBtn');
+      var lbl = document.getElementById('usernameLabel');
+      var spinner = document.getElementById('spinner');
+      creds.style.display = 'none';
+      banner.style.display = 'none';
+      btn.disabled = true;
+      btn.classList.remove('admin-btn');
+      btn.textContent = 'Sign In';
+      spinner.classList.remove('admin-spinner');
+      document.getElementById('errorMsg').style.display = 'none';
+      if (t === 'agent') {
+        creds.style.display = 'block';
+        lbl.textContent = 'Username';
+        btn.disabled = false;
+      } else if (t === 'venue' || t === 'band') {
+        creds.style.display = 'block';
+        lbl.textContent = 'Username';
+        btn.disabled = false;
+      } else if (t === 'admin') {
+        creds.style.display = 'block';
+        banner.style.display = 'block';
+        lbl.textContent = 'Admin Username';
+        btn.disabled = false;
+        btn.textContent = 'Access Admin Panel';
+        btn.classList.add('admin-btn');
+        spinner.classList.add('admin-spinner');
+      }
+    }
+
+    function showError(msg) {
+      var el = document.getElementById('errorMsg');
+      el.textContent = msg; el.style.display = 'block';
+    }
+
+    function restoreForm() {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('loginForm').style.display = 'block';
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      var t = document.getElementById('userType').value;
+      if (!t) { showError('Please select an account type.'); return false; }
+
+      var u = document.getElementById('username').value.trim();
+      var p = document.getElementById('password').value;
+      if (!u || !p) { showError('Please enter your username and password.'); return false; }
+
+      document.getElementById('successMsg').style.display = 'none';
+      document.getElementById('errorMsg').style.display = 'none';
+      document.getElementById('loginForm').style.display = 'none';
+      document.getElementById('loading').style.display = 'block';
+
+      try {
+        var actionMap = {
+          agent: 'authenticateAgent',
+          venue: 'authenticateVenue',
+          band:  'authenticateBand',
+          admin: 'authenticateAdmin'
+        };
+
+        if (t === 'admin') {
+          document.getElementById('loadingText').textContent = 'Verifying credentials…';
+        }
+
+        var r = await callApi(actionMap[t], [u, p]);
+
+        if (r && r.success) {
+          if (t === 'admin') {
+            var url = await callApi('redirectToAdminDashboard', []);
+            // Store session info locally since we no longer have PropertiesService-backed
+            // server-side session cookies tied to this origin.
+            sessionStorage.setItem('dka_role', 'admin');
+            window.location.href = 'admin-dashboard.html';
+          } else {
+            sessionStorage.setItem('dka_role', t);
+            sessionStorage.setItem('dka_id', r.agentId || r.venueId || r.bandId || '');
+            window.location.href = t + '-dashboard.html';
+          }
+        } else {
+          restoreForm();
+          showError((r && r.message) || 'Invalid username or password.');
+        }
+      } catch (err) {
+        restoreForm();
+        showError('Error: ' + err.message);
+      }
+
+      return false;
+    }
+  </script>
+</body>
+</html>
