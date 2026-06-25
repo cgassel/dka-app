@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#A07018">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="DK Agency">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <title>Dave Kalz Agency — Dashboard</title>
+  <style>
+    :root {
+      --bg:#f0ebe0; --bg2:#e8e0d0; --card:#faf8f4; --card2:#f2ede4;
+      --border:#d4c4a0; --bronze1:#C8960C; --bronze2:#A07018;
+      --bronze3:#7A5210; --bronze4:#5A3C0C;
+      --bronze-bg:rgba(160,112,24,0.1);
+      --text:#1a1408; --muted:#6b5e48; --dim:#a09070;
+      --green:#2e7d5c; --green-bg:rgba(46,125,92,0.1);
+      --red:#8B2000; --red-bg:rgba(139,32,0,0.1);
+      --amber:#b45309; --amber-bg:rgba(180,83,9,0.1);
+      --blue:#1e4d8c; --blue-bg:rgba(30,77,140,0.1);
+      --radius:12px; --nav-h:60px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 72px; }
+
+    .page-wrap { max-width: 1280px; margin: 0 auto; padding: 20px 16px 24px; }
+    .page-header { margin-bottom: 18px; }
+    .page-header h1 { font-size: 1.5rem; font-weight: 700; color: var(--bronze2); letter-spacing: -0.5px; }
+    .page-header p { color: var(--muted); font-size: 0.88rem; margin-top: 3px; }
+
+    .quick-nav { display: grid; grid-template-columns: repeat(9, 1fr); gap: 6px; margin-bottom: 16px; }
+    .nav-btn { background: var(--card); border: 1.5px solid var(--border); color: var(--bronze2); padding: 8px 4px; border-radius: 10px; font-size: 0.72rem; font-weight: 600; cursor: pointer; transition: all 0.18s; display: flex; flex-direction: column; align-items: center; gap: 4px; font-family: 'Inter', sans-serif; text-align: center; line-height: 1.2; min-height: 58px; justify-content: center; }
+    .nav-btn .nav-icon { font-size: 1.2rem; }
+    .nav-btn:hover { background: var(--bronze2); color: white; border-color: var(--bronze2); }
+    .nav-btn.green { border-color: #c8e6c9; color: var(--green-dark); }
+    .nav-btn.green:hover { background: var(--green); color: white; border-color: var(--green); }
+
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-bottom: 20px; }
+    .stat-card { background: var(--card); border-radius: 10px; padding: 10px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.07); border-left: 3px solid transparent; position:relative; overflow:hidden; }
+    .stat-card.blue { border-left-color: var(--bronze2); } .stat-card.teal { border-left-color: var(--bronze1); }
+    .stat-card.green { border-left-color: var(--green); } .stat-card.gold { border-left-color: var(--bronze1); }
+    .stat-card.red { border-left-color: var(--red); }
+    .stat-label { font-size: 0.65rem; font-weight: 600; text-transform:uppercase; letter-spacing:0.6px; color: var(--muted); margin-bottom: 4px; }
+    .stat-value { font-size: 1.25rem; font-weight: 700; color: var(--text); font-family: 'JetBrains Mono', monospace; letter-spacing:-0.5px; line-height: 1; }
+    .stat-value.loading-shimmer { background: linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 6px; color: transparent; min-width: 60px; }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+    .stat-sub { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+    .stat-icon { position: absolute; right: 14px; top: 14px; font-size: 1.4rem; opacity: 0.15; }
+
+    .panel-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .panel { background: var(--card); border-radius: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.07),0 4px 12px rgba(0,0,0,0.04); overflow: hidden; }
+    .panel-full { background: var(--card); border-radius: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.07),0 4px 12px rgba(0,0,0,0.04); overflow: hidden; margin-bottom: 16px; }
+    .panel-header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+    .panel-title { font-size: 0.88rem; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 6px; }
+    .panel-badge { background: var(--bg); color: var(--muted); font-size: 0.7rem; font-weight: 600; padding: 2px 7px; border-radius: 10px; font-family: 'JetBrains Mono', monospace; }
+    .panel-body { padding: 0; }
+    .booking-item { padding: 12px 18px; border-bottom: 1px solid var(--border); display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: start; }
+    .booking-item:last-child { border-bottom: none; }
+    .booking-names { font-size: 0.88rem; font-weight: 600; color: var(--text); }
+    .booking-meta { font-size: 0.75rem; color: var(--muted); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 2px; }
+    .booking-date { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; font-weight: 500; color: var(--bronze2); white-space: nowrap; text-align: right; }
+    .booking-pay { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; font-weight: 600; color: var(--green-dark); }
+    .status-badge { display: inline-flex; align-items: center; padding: 2px 7px; border-radius: 10px; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+    .status-confirmed { background:#e8f5e9;color:#2e7d32; } .status-pending { background:#fff8e1;color:#e65100; }
+    .status-cancelled { background:#ffebee;color:#b71c1c; } .status-tentative { background:#e3f2fd;color:#1565c0; }
+    .status-completed { background:#f3e5f5;color:#6a1b9a; }
+    .alert-item { padding: 12px 18px; border-bottom: 1px solid var(--border); display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; }
+    .alert-item:last-child { border-bottom: none; }
+    .alert-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; flex-shrink: 0; }
+    .alert-icon.red{background:#ffebee} .alert-icon.gold{background:#fff8e1} .alert-icon.blue{background:#e3f2fd}
+    .alert-name { font-size: 0.85rem; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .alert-detail { font-size: 0.73rem; color: var(--muted); margin-top: 2px; }
+    .alert-days { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 600; color: var(--red); white-space: nowrap; }
+    .alert-days.warn{color:var(--bronze1)} .alert-days.ok{color:var(--green)}
+    .open-venue-item { padding: 11px 18px; border-bottom: 1px solid var(--border); display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: start; }
+    .open-venue-item:last-child { border-bottom: none; }
+    .open-dates-list { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+    .open-date-chip { background:#e8f5e9;color:#2e7d32;font-size:0.68rem;font-family:'JetBrains Mono',monospace;font-weight:500;padding:2px 7px;border-radius:6px; }
+    .venue-city { font-size: 0.73rem; color: var(--muted); }
+    .earnings-row { padding: 10px 18px; border-bottom: 1px solid var(--border); display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center; font-size: 0.84rem; }
+    .earnings-row:last-child { border-bottom: none; }
+    .earnings-count { font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--muted);text-align:right; }
+    .earnings-amount { font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--text);text-align:right;min-width:70px; }
+    .empty-state { padding: 32px 20px; text-align: center; color: var(--muted); }
+    .empty-state .empty-icon { font-size: 2rem; margin-bottom: 8px; opacity: 0.5; }
+    .empty-state p { font-size: 0.84rem; }
+    .section-label { font-size: 0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);padding:7px 18px 4px;background:#f8fafc;border-bottom:1px solid var(--border); }
+    .refresh-btn { background:none;border:1.5px solid var(--border);color:var(--muted);font-size:0.75rem;font-family:'Inter',sans-serif;font-weight:600;padding:4px 10px;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:4px; }
+    .period-tabs { display:flex;gap:3px; }
+    .period-tab { padding:3px 9px;border-radius:6px;font-size:0.72rem;font-weight:600;cursor:pointer;border:none;background:none;color:var(--muted);font-family:'Inter',sans-serif; }
+    .period-tab.active { background:var(--bronze2);color:white; }
+
+    .notif-bell-btn { position:relative;background:rgba(0,0,0,0.2);border:1px solid rgba(200,160,60,0.25);color:rgba(245,234,208,0.85);width:34px;height:34px;border-radius:6px;font-size:0.95rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.2s; }
+    .notif-bell-btn:hover { border-color:rgba(240,192,80,0.5);color:rgba(240,192,80,1); } .notif-bell-btn.has-unread { background:rgba(160,112,24,0.2);border-color:rgba(200,150,12,0.6);color:rgba(240,192,80,1);animation:bell-pulse 2.5s ease-in-out infinite; }
+    @keyframes bell-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(212,160,23,.5)} 50%{box-shadow:0 0 0 6px rgba(212,160,23,0)} }
+    .notif-count { position:absolute;top:-5px;right:-5px;background:var(--bronze1);color:white;font-size:0.62rem;font-weight:800;min-width:16px;height:16px;border-radius:9px;display:none;align-items:center;justify-content:center;padding:0 3px;border:2px solid var(--bronze2); }
+    .notif-backdrop { display:none;position:fixed;inset:0;z-index:199; }
+    .notif-backdrop.open { display:block; }
+    .notif-drawer { position:fixed;top:var(--nav-h);right:12px;width:min(380px, calc(100vw - 24px));max-height:calc(100vh - 80px);background:var(--card);border-radius:14px;box-shadow:0 8px 40px rgba(0,0,0,0.18);border:1px solid #e0e0e0;z-index:200;display:flex;flex-direction:column;overflow:hidden;transform:translateY(-8px) scale(0.97);opacity:0;pointer-events:none;transition:transform 0.2s ease,opacity 0.2s ease; }
+    .notif-drawer.open { transform:translateY(0) scale(1);opacity:1;pointer-events:all; }
+    .notif-drawer-header { padding:13px 16px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between;flex-shrink:0; }
+    .notif-drawer-title { font-weight:700;font-size:0.92rem;color:#222;display:flex;align-items:center;gap:7px; }
+    .notif-unread-badge { background:var(--bronze1);color:white;font-size:0.65rem;font-weight:800;padding:2px 6px;border-radius:10px; }
+    .notif-mark-all { font-size:0.73rem;color:var(--bronze2);background:none;border:none;cursor:pointer;font-weight:600;padding:4px 7px;border-radius:5px; }
+    .notif-mark-all:disabled { color:#aaa;cursor:default; }
+    .notif-list { overflow-y:auto;flex:1; }
+    .notif-item { display:flex;gap:10px;padding:12px 14px;border-bottom:1px solid #f5f5f5;transition:background 0.15s;position:relative; }
+    .notif-item:last-child { border-bottom:none; }
+    .notif-item.unread { background:rgba(160,112,24,0.04);border-left:3px solid var(--bronze1); }
+    .notif-icon { font-size:1.2rem;flex-shrink:0;margin-top:1px; }
+    .notif-body { flex:1;min-width:0; }
+    .notif-text { font-size:0.84rem;color:#222;line-height:1.4;margin-bottom:3px; }
+    .notif-text strong { color:var(--bronze2); }
+    .notif-meta { font-size:0.7rem;color:#aaa; }
+    .notif-unread-dot { width:7px;height:7px;border-radius:50%;background:var(--bronze1);flex-shrink:0;margin-top:6px; }
+    .notif-empty { text-align:center;padding:40px 20px;color:#aaa; }
+    .notif-empty p { font-size:0.84rem;margin-top:6px; }
+
+    .loading-overlay { display:none;position:fixed;inset:0;background:rgba(15,23,42,0.65);backdrop-filter:blur(3px);z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:14px; }
+    .loading-overlay.show { display:flex; }
+    .loading-spinner { width:44px;height:44px;border:2px solid var(--border);border-top-color:var(--bronze1);border-radius:50%;animation:spin 0.75s linear infinite; }
+    @keyframes spin { to{transform:rotate(360deg)} }
+    .loading-text { color:white;font-size:0.92rem;font-weight:600;letter-spacing:0.5px; }
+    .toast-msg { position:fixed;bottom:84px;left:50%;transform:translateX(-50%) translateY(40px);background:#2e7d32;color:white;padding:11px 22px;border-radius:24px;font-size:0.92rem;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.25);transition:transform 0.35s ease,opacity 0.35s ease;opacity:0;white-space:nowrap; }
+    .toast-msg.show { transform:translateX(-50%) translateY(0);opacity:1; }
+
+    .bottom-nav { display:none;position:fixed;bottom:0;left:0;right:0;height:64px;background:var(--bg2);border-top:1px solid var(--border);z-index:150;padding:0 4px;align-items:center;justify-content:space-around;box-shadow:0 -2px 12px rgba(0,0,0,0.08); }
+    .bnav-btn { display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;cursor:pointer;padding:6px 8px;border-radius:8px;font-family:'Inter',sans-serif;color:var(--muted);flex:1;min-width:0; }
+    .bnav-btn.primary { color:var(--bronze2); }
+    .bnav-btn .bnav-icon { font-size:1.3rem;line-height:1; }
+    .bnav-btn .bnav-label { font-size:0.6rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%; }
+
+    @media (max-width: 640px) {
+      body { padding-bottom: 80px; }
+      .page-wrap { padding: 14px 12px 20px; }
+      .page-header h1 { font-size: 1.25rem; }
+      .quick-nav { display: none; }
+      .bottom-nav { display: flex; }
+      .stats-grid { grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+      .stat-card { padding: 8px 12px; }
+      .stat-value { font-size: 1.1rem; }
+      .stat-label { font-size: 0.68rem; }
+      .stat-icon { font-size: 1.1rem; right: 10px; top: 10px; }
+      .panel-row { grid-template-columns: 1fr; gap: 12px; margin-bottom: 12px; }
+      .panel-full { margin-bottom: 12px; }
+      .panel-header { padding: 12px 14px; }
+      .booking-item { padding: 11px 14px; }
+      .alert-item { padding: 11px 14px; }
+      .open-venue-item { padding: 10px 14px; }
+      .earnings-row { padding: 9px 14px; gap: 8px; }
+      .earnings-amount { min-width: 55px; font-size: 0.8rem; }
+      .notif-drawer { right: 8px; left: 8px; width: auto; }
+      .toast-msg { bottom: 76px; font-size: 0.85rem; padding: 9px 18px; white-space: normal; text-align: center; max-width: calc(100vw - 32px); }
+    }
+
+    @media (min-width: 641px) and (max-width: 900px) {
+      .quick-nav { grid-template-columns: repeat(4, 1fr); }
+      .stats-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    .stat-card[style*="grid-column"] { min-height: auto; }
+    .open-slot-item { padding: 11px 18px; border-bottom: 1px solid var(--border); display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: start; }
+    .open-slot-item:last-child { border-bottom: none; }
+    .open-slot-date { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; font-weight: 700; color: var(--bronze2); white-space: nowrap; background: #e8f0fb; padding: 3px 8px; border-radius: 6px; }
+    .open-slot-venue { font-size: 0.87rem; font-weight: 600; color: var(--text); }
+    .open-slot-meta { font-size: 0.74rem; color: var(--muted); margin-top: 2px; }
+    .open-slot-suggestions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+    .band-match-chip { display:inline-flex; align-items:center; gap:5px; background:#f0f4fa; color:var(--bronze2); font-size:0.72rem; font-weight:700; padding:3px 10px; border-radius:10px; cursor:pointer; border:1px solid rgba(160,112,24,0.15); transition:all 0.15s; }
+    .band-match-chip:hover { background:var(--bronze2); color:white; }
+    .band-match-chip.roster { background:linear-gradient(135deg,rgba(160,112,24,0.15),rgba(200,150,12,0.08)); border-color:#A07018; }
+    .band-match-chip.roster:hover { background:#A07018; color:white; }
+    .slot-week-label { font-size:0.7rem; font-weight:800; text-transform:uppercase; letter-spacing:1.2px; color:var(--muted); padding:7px 18px 5px; background:var(--bg); border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; }
+    .slot-week-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    .open-slot-item { padding:11px 18px; border-bottom:1px solid var(--border); display:grid; grid-template-columns:auto 1fr; gap:12px; align-items:start; }
+    .open-slot-item:last-child { border-bottom:none; }
+    .slot-book-btn { background:#A07018; color:#fff; border:none; border-radius:6px; padding:4px 10px; font-size:0.72rem; font-weight:700; font-family:inherit; cursor:pointer; white-space:nowrap; margin-top:6px; }
+    .slot-book-btn:hover { background:#8a6014; }
+    .suggestion-chip { background: #f0f4fa; color: var(--bronze2); font-size: 0.7rem; font-weight: 600; padding: 2px 8px; border-radius: 10px; }
+    .video-panel { display:none; margin-top:10px; border-radius:10px; overflow:hidden; background:#000; position:relative; }
+    .video-panel.open { display:block; }
+    .video-panel-header { display:flex; justify-content:space-between; align-items:center; background:#1a1408; padding:6px 10px; }
+    .video-panel-title { font-size:0.72rem; font-weight:700; color:#f5ead0; }
+    .video-panel-close { background:none; border:none; color:#f5ead0; font-size:1rem; cursor:pointer; padding:0 4px; opacity:0.7; }
+    .video-panel-close:hover { opacity:1; }
+    .video-panel iframe { width:100%; height:200px; border:none; display:block; }
+    .book-slot-btn { background: var(--bronze2); color: white; border: none; border-radius: 6px; padding: 5px 11px; font-size: 0.75rem; font-weight: 600; cursor: pointer; white-space: nowrap; font-family: 'Inter', sans-serif; }
+    .contact-alert-item { padding: 12px 18px; border-bottom: 1px solid var(--border); }
+    .contact-alert-item:last-child { border-bottom: none; }
+    .contact-alert-name { font-size: 0.87rem; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+    .contact-alert-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+    .contact-badge { font-size: 0.7rem; font-weight: 600; padding: 2px 8px; border-radius: 10px; white-space: nowrap; }
+    .contact-badge.red { background: #ffebee; color: #c62828; }
+    .contact-badge.orange { background: #fff3e0; color: #e65100; }
+    .contact-badge.blue { background: #e3f2fd; color: #1565c0; }
+    .contact-badge.green { background: #e8f5e9; color: #2e7d32; }
+    @media (max-width: 640px) {
+      .stat-card[style*="grid-column"] { grid-column: span 2; }
+      .open-slot-item { grid-template-columns: 1fr; gap: 6px; }
+      .book-slot-btn { width: 100%; margin-top: 4px; }
+    }
+
+    .topbar {
+      background:linear-gradient(160deg,#3a2608 0%,#6a4a10 10%,#a07020 20%,#d4a030 30%,#f0c050 42%,#e8b838 50%,#c08820 60%,#906010 70%,#6a4810 82%,#4a3008 90%,#2e1e06 100%);
+      border-bottom:1px solid rgba(200,150,50,0.2);
+      padding:0 20px; display:flex; align-items:center; justify-content:space-between;
+      height:var(--nav-h); position:sticky; top:0; z-index:100;
+      box-shadow:0 2px 20px rgba(0,0,0,0.25);
+    }
+    .topbar::before { content:''; position:absolute; inset:0; pointer-events:none;
+      background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,0.06) 50%,transparent 70%); }
+    .topbar-brand { display:flex; align-items:center; gap:10px; position:relative; z-index:1; }
+    .brand-logo { width:36px; height:36px; object-fit:contain; flex-shrink:0; }
+    .brand-text { display:flex; flex-direction:column; gap:1px; }
+    .brand-name { font-size:0.92rem; font-weight:600; color:#f5ead0; letter-spacing:0.3px; }
+    .brand-sub  { font-size:0.58rem; font-weight:500; letter-spacing:2px; text-transform:uppercase; color:rgba(240,192,80,0.8); }
+    .topbar-right { display:flex; align-items:center; gap:8px; position:relative; z-index:1; }
+    .btn-logout, .btn-back, .hdr-logout {
+      background:rgba(0,0,0,0.2); color:rgba(245,234,208,0.8);
+      border:1px solid rgba(200,160,60,0.25); padding:5px 12px; border-radius:6px;
+      font-size:0.72rem; font-weight:500; font-family:inherit;
+      letter-spacing:0.5px; cursor:pointer; transition:all 0.2s; white-space:nowrap;
+    }
+    .btn-logout:hover,.btn-back:hover,.hdr-logout:hover { border-color:rgba(240,192,80,0.5); color:rgba(240,192,80,1); }
+    .agent-badge { background:rgba(0,0,0,0.2);border:1px solid rgba(232,184,56,0.3);color:rgba(240,192,80,0.9);padding:5px 12px;border-radius:20px;font-size:0.75rem;font-weight:500;display:flex;align-items:center;gap:6px; }
+    .agent-badge .dot { width:5px; height:5px; border-radius:50%; background:#7cb87a; animation:apulse 2s infinite; flex-shrink:0; }
+    @keyframes apulse { 0%,100%{opacity:1}50%{opacity:.3} }
+
+    .modal-backdrop {
+      display:none; position:fixed; inset:0;
+      background:rgba(20,14,4,0.65); backdrop-filter:blur(4px);
+      z-index:500; align-items:flex-start; justify-content:center;
+      padding:20px 16px 40px; overflow-y:auto;
+    }
+    .modal-backdrop.open { display:flex; }
+    .modal-box {
+      background:var(--card); border-radius:16px; width:100%; max-width:760px;
+      box-shadow:0 0 0 1px rgba(200,150,50,0.2), 0 8px 40px rgba(0,0,0,0.4);
+      overflow:hidden; position:relative; margin:auto;
+      animation:modal-in 0.25s ease;
+    }
+    @keyframes modal-in { from{transform:translateY(24px);opacity:0} to{transform:translateY(0);opacity:1} }
+    .modal-header {
+      background:linear-gradient(160deg,#3a2608 0%,#6a4a10 10%,#a07020 20%,#d4a030 30%,#f0c050 42%,#e8b838 50%,#c08820 60%,#906010 70%,#6a4810 82%,#4a3008 90%,#2e1e06 100%);
+      padding:20px 24px; display:flex; align-items:center; justify-content:space-between;
+      position:relative;
+    }
+    .modal-header::before {
+      content:''; position:absolute; inset:0; pointer-events:none;
+      background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,0.06) 50%,transparent 70%);
+    }
+    .modal-header h2 {
+      font-size:1.1rem; font-weight:700; color:#f5ead0;
+      letter-spacing:0.3px; position:relative; z-index:1;
+    }
+    .modal-close {
+      background:rgba(0,0,0,0.2); border:1px solid rgba(200,160,60,0.25);
+      color:rgba(245,234,208,0.8); width:32px; height:32px;
+      border-radius:6px; font-size:1.1rem; cursor:pointer;
+      display:flex; align-items:center; justify-content:center;
+      position:relative; z-index:1; transition:all 0.2s;
+    }
+    .modal-close:hover { border-color:rgba(240,192,80,0.5); color:rgba(240,192,80,1); }
+    .modal-body { padding:24px 28px 32px; }
+    .modal-section {
+      font-size:0.68rem; font-weight:700; text-transform:uppercase;
+      letter-spacing:1.5px; color:var(--bronze3);
+      background:var(--bronze-bg); border-left:3px solid var(--bronze2);
+      padding:6px 12px; border-radius:0 6px 6px 0; margin:24px 0 16px;
+    }
+    .modal-section:first-child { margin-top:0; }
+    .modal-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .modal-form .form-group { margin-bottom:14px; }
+    .modal-form label {
+      display:block; font-size:0.7rem; font-weight:600;
+      letter-spacing:0.8px; text-transform:uppercase;
+      color:var(--muted); margin-bottom:6px;
+    }
+    .modal-form label .req { color:var(--red); }
+    .modal-form input, .modal-form select, .modal-form textarea {
+      width:100%; padding:10px 13px; background:#fff;
+      border:1.5px solid var(--border); border-radius:8px;
+      font-size:0.9rem; font-family:'Inter',sans-serif; color:var(--text);
+      transition:border-color 0.2s,box-shadow 0.2s;
+      appearance:none; -webkit-appearance:none;
+    }
+    .modal-form input:focus, .modal-form select:focus, .modal-form textarea:focus {
+      outline:none; border-color:var(--bronze1);
+      box-shadow:0 0 0 3px rgba(160,112,24,0.1);
+    }
+    .modal-form input::placeholder, .modal-form textarea::placeholder { color:var(--dim); }
+    .modal-form textarea { resize:vertical; min-height:80px; }
+    .modal-form select {
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%236b5e48' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");
+      background-repeat:no-repeat; background-position:right 13px center; padding-right:36px;
+    }
+    .help-text { font-size:0.76rem; color:var(--muted); margin-top:4px; font-style:italic; }
+
+    .size-options { display:flex; gap:8px; flex-wrap:wrap; }
+    .size-option input[type="radio"] { display:none; }
+    .size-option label {
+      display:inline-block; padding:8px 18px;
+      border:1.5px solid var(--border); border-radius:20px;
+      cursor:pointer; font-weight:600; font-size:0.85rem;
+      color:var(--muted); transition:all 0.18s; margin:0;
+      background:#fff;
+    }
+    .size-option input[type="radio"]:checked + label {
+      background:linear-gradient(160deg,#3a2608 0%,#6a4a10 10%,#a07020 20%,#d4a030 30%,#f0c050 42%,#e8b838 50%,#c08820 60%,#906010 70%,#6a4810 82%,#4a3008 90%,#2e1e06 100%); border-color:transparent;
+      color:#111008; font-weight:800;
+      box-shadow:0 2px 8px rgba(80,50,10,0.25);
+    }
+    .size-option label:hover { border-color:var(--bronze2); color:var(--bronze2); }
+
+    .genre-grid {
+      display:flex; flex-wrap:wrap; gap:8px; padding:12px;
+      border:1.5px solid var(--border); border-radius:8px;
+      background:var(--card2); transition:border-color 0.2s;
+    }
+    .genre-grid.has-selection { border-color:var(--bronze1); }
+    .genre-pill input[type="checkbox"] { display:none; }
+    .genre-pill label {
+      display:inline-block; padding:6px 14px;
+      border:1.5px solid var(--border); border-radius:16px;
+      cursor:pointer; font-weight:600; font-size:0.8rem;
+      color:var(--muted); transition:all 0.18s; margin:0;
+      background:#fff; white-space:nowrap;
+    }
+    .genre-pill input[type="checkbox"]:checked + label {
+      background:linear-gradient(160deg,#3a2608 0%,#6a4a10 10%,#a07020 20%,#d4a030 30%,#f0c050 42%,#e8b838 50%,#c08820 60%,#906010 70%,#6a4810 82%,#4a3008 90%,#2e1e06 100%); border-color:transparent;
+      color:#111008; font-weight:800;
+      box-shadow:0 2px 6px rgba(80,50,10,0.2);
+    }
+    .genre-pill label:hover { border-color:var(--bronze2); color:var(--bronze2); }
+    .genre-selected { font-size:0.76rem; color:var(--bronze3); font-weight:600; margin-top:6px; min-height:16px; }
+
+    .comm-preview {
+      background:var(--bronze-bg); border:1px solid rgba(160,112,24,0.2);
+      border-radius:8px; padding:14px 16px; margin-top:12px; display:none;
+    }
+    .comm-preview h4 { font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--bronze3); margin-bottom:10px; }
+    .comm-rows { display:grid; grid-template-columns:1fr auto auto; gap:5px 14px; font-size:0.84rem; }
+    .comm-rows .ch  { font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--muted); border-bottom:1px solid var(--border); padding-bottom:3px; }
+    .comm-rows .cp  { text-align:right; color:var(--text); font-weight:600; font-family:'JetBrains Mono',monospace; }
+    .comm-rows .ce  { text-align:right; color:var(--green); font-weight:700; font-family:'JetBrains Mono',monospace; }
+    .input-suffix-wrap { position:relative; }
+    .input-suffix-wrap input { padding-right:38px; }
+    .input-suffix { position:absolute; right:13px; top:50%; transform:translateY(-50%); font-size:0.9rem; font-weight:700; color:var(--bronze2); pointer-events:none; }
+
+    .modal-footer {
+      display:flex; gap:12px; padding:16px 28px 24px;
+      border-top:1px solid var(--border); background:var(--card2);
+    }
+    .modal-footer .btn-primary {
+      flex:1; padding:12px; background:linear-gradient(160deg,#3a2608 0%,#6a4a10 10%,#a07020 20%,#d4a030 30%,#f0c050 42%,#e8b838 50%,#c08820 60%,#906010 70%,#6a4810 82%,#4a3008 90%,#2e1e06 100%);
+      color:#111008; border:none; border-radius:8px;
+      font-size:0.8rem; font-weight:800; font-family:'Inter',sans-serif;
+      letter-spacing:1.5px; text-transform:uppercase; cursor:pointer;
+      box-shadow:0 2px 10px rgba(80,50,10,0.25); transition:all 0.22s;
+    }
+    .modal-footer .btn-primary:hover:not(:disabled) { filter:brightness(1.08); transform:translateY(-1px); }
+    .modal-footer .btn-primary:disabled { opacity:0.35; cursor:not-allowed; }
+    .modal-footer .btn-cancel {
+      padding:12px 20px; background:#fff; color:var(--muted);
+      border:1.5px solid var(--border); border-radius:8px;
+      font-size:0.8rem; font-weight:600; font-family:'Inter',sans-serif;
+      cursor:pointer; transition:all 0.18s;
+    }
+    .modal-footer .btn-cancel:hover { border-color:var(--bronze2); color:var(--bronze2); }
+    .modal-success {
+      background:var(--green-bg); border:1px solid rgba(46,125,92,0.2);
+      color:var(--green); padding:12px 16px; border-radius:8px;
+      margin-bottom:14px; display:none; font-size:0.88rem; font-weight:500;
+    }
+    .modal-error {
+      background:var(--red-bg); border:1px solid rgba(139,32,0,0.2);
+      color:var(--red); padding:12px 16px; border-radius:8px;
+      margin-bottom:14px; display:none; font-size:0.88rem; font-weight:500;
+    }
+    .modal-loading { display:none; text-align:center; padding:32px; }
+    @media (max-width:640px) {
+      .modal-row { grid-template-columns:1fr; gap:0; }
+      .modal-body { padding:18px 16px 24px; }
+      .modal-footer { padding:14px 16px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="topbar-brand">
+      <img class="brand-logo" src="icons/dka-logo.png" alt="DKA">
+      <div class="brand-text">
+        <span class="brand-name">Dave Kalz Agency</span>
+        <span class="brand-sub">Booking System</span>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="agent-badge"><div class="dot"></div><span id="agentName">Loading&#8230;</span></div>
+      <button class="notif-bell-btn" id="notifBellBtn" onclick="toggleNotifDrawer()" title="Notifications">&#128276;<span class="notif-count" id="notifCount"></span></button>
+      <button class="btn-logout" onclick="logout()">Sign Out</button>
+    </div>
+  </div>
+
+  <div class="page-wrap">
+    <div class="page-header">
+      <h1 id="welcomeText">Dashboard</h1>
+      <p id="dateText">Loading your performance data&#8230;</p>
+    </div>
+
+    <div class="quick-nav">
+      <button class="nav-btn green" onclick="openAddBandModal()"><span class="nav-icon">&#127928;</span>Add Band</button>
+      <button class="nav-btn green" onclick="openAddVenueModal()"><span class="nav-icon">&#127970;</span>Add Venue</button>
+      <button class="nav-btn green" onclick="createBooking()"><span class="nav-icon">&#128197;</span>Create Booking</button>
+      <button class="nav-btn" onclick="viewBandDirectory()"><span class="nav-icon">&#128203;</span>Band Directory</button>
+      <button class="nav-btn" onclick="viewVenueDirectory()"><span class="nav-icon">&#127963;</span>Venue Directory</button>
+      <button class="nav-btn" onclick="viewVenueMap()"><span class="nav-icon">&#128506;</span>Venue Map</button>
+      <button class="nav-btn" onclick="viewCalendar()"><span class="nav-icon">&#128198;</span>All Bookings</button>
+      <button class="nav-btn" onclick="viewMyBookings()"><span class="nav-icon">&#128197;</span>My Bookings</button>
+      <button class="nav-btn" onclick="viewContracts()"><span class="nav-icon">&#x1F4CB;</span>Contracts</button>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card blue" style="grid-column:span 2;">
+        <div class="stat-icon">&#128176;</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div class="stat-label">My Commission Earned</div>
+          <div class="period-tabs" style="margin:0;">
+            <button class="period-tab active" onclick="setCommPeriod('week',this)">Week</button>
+            <button class="period-tab" onclick="setCommPeriod('month',this)">Month</button>
+            <button class="period-tab" onclick="setCommPeriod('year',this)">Year</button>
+          </div>
+        </div>
+        <div class="stat-value loading-shimmer" id="statCommission">$0</div>
+        <div class="stat-sub" id="statCommSub">Loading&#8230;</div>
+      </div>
+      <div class="stat-card green" style="cursor:pointer;" onclick="viewBandStats()">
+        <div class="stat-icon">&#127928;</div>
+        <div class="stat-label">Active Bands Booked</div>
+        <div class="stat-value loading-shimmer" id="statBandsBooked">0</div>
+        <div class="stat-sub" id="statBandsSub">Tap for band stats &#8594;</div>
+      </div>
+      <div class="stat-card gold">
+        <div class="stat-icon">&#127970;</div>
+        <div class="stat-label">Venues Working With</div>
+        <div class="stat-value loading-shimmer" id="statVenuesBooked">0</div>
+        <div class="stat-sub" id="statVenuesSub">Loading&#8230;</div>
+      </div>
+      <div class="stat-card red">
+        <div class="stat-icon">&#128276;</div>
+        <div class="stat-label">Venues Need Contact</div>
+        <div class="stat-value loading-shimmer" id="statContactAlert">0</div>
+        <div class="stat-sub">Silent 30+ days</div>
+      </div>
+    </div>
+
+    <div class="panel-row">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">&#128197; Upcoming Bookings <span class="panel-badge" id="upcomingCount">&#8211;</span></div>
+          <div class="period-tabs">
+            <button class="period-tab active" onclick="setUpcomingPeriod(30,this)">30d</button>
+            <button class="period-tab" onclick="setUpcomingPeriod(60,this)">60d</button>
+            <button class="period-tab" onclick="setUpcomingPeriod(90,this)">90d</button>
+          </div>
+        </div>
+        <div class="panel-body" id="upcomingBookings"><div class="empty-state"><div class="empty-icon">&#8987;</div><p>Loading bookings&#8230;</p></div></div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">&#128276; Venues to Contact <span class="panel-badge" id="contactCount">&#8211;</span></div>
+          <button class="refresh-btn" onclick="refreshDashboard()">&#8635; Refresh</button>
+        </div>
+        <div class="panel-body" id="contactAlerts"><div class="empty-state"><div class="empty-icon">&#8987;</div><p>Loading&#8230;</p></div></div>
+      </div>
+    </div>
+
+    <div class="panel-full" style="margin-bottom:16px;">
+      <div class="panel-header">
+        <div class="panel-title">&#127925; Open Venue Slots &amp; Band Matches <span class="panel-badge" id="openSlotsCount">&#8211;</span></div>
+        <div class="period-tabs">
+          <button class="period-tab active" id="slotTab1" onclick="setSlotWeek(1)">This Week</button>
+          <button class="period-tab" id="slotTab2" onclick="setSlotWeek(2)">Week 2</button>
+          <button class="period-tab" id="slotTab3" onclick="setSlotWeek(3)">Week 3</button>
+          <button class="period-tab" id="slotTabAll" onclick="setSlotWeek(0)">All</button>
+        </div>
+      </div>
+      <div class="panel-body" id="openSlotsPanel"><div class="empty-state"><div class="empty-icon">&#8987;</div><p>Loading open slots&#8230;</p></div></div>
+    </div>
+
+    <div class="panel-row">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">&#128198; Open Weekends at Your Venues <span class="panel-badge" id="openDatesCount">&#8211;</span></div>
+        </div>
+        <div class="panel-body" id="openDatesPanel"><div class="empty-state"><div class="empty-icon">&#8987;</div><p>Analyzing calendars&#8230;</p></div></div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">&#128181; Earnings Breakdown</div>
+          <div class="period-tabs">
+            <button class="period-tab active" onclick="setEarningsPeriod('month',this)">Month</button>
+            <button class="period-tab" onclick="setEarningsPeriod('year',this)">Year</button>
+            <button class="period-tab" onclick="setEarningsPeriod('all',this)">All</button>
+          </div>
+        </div>
+        <div class="panel-body" id="earningsBreakdown"><div class="empty-state"><div class="empty-icon">&#8987;</div><p>Calculating earnings&#8230;</p></div></div>
+      </div>
+    </div>
+
+    <div class="panel-full">
+      <div class="panel-header">
+        <div class="panel-title">&#128336; Recent Bookings <span class="panel-badge" id="recentCount">&#8211;</span></div>
+      </div>
+      <div class="panel-body" id="recentBookings"><div class="empty-state"><div class="empty-icon">&#8987;</div><p>Loading recent activity&#8230;</p></div></div>
+    </div>
+  </div>
+
+  <div class="notif-backdrop" id="notifBackdrop" onclick="closeNotifDrawer()"></div>
+  <div class="notif-drawer" id="notifDrawer">
+    <div class="notif-drawer-header">
+      <div class="notif-drawer-title">&#128276; Notifications <span class="notif-unread-badge" id="drawerUnreadBadge" style="display:none;"></span></div>
+      <button class="notif-mark-all" id="markAllBtn" onclick="markAllRead()" disabled>Mark all read</button>
+    </div>
+    <div class="notif-list" id="notifList"><div class="notif-empty"><p>Loading&#8230;</p></div></div>
+  </div>
+
+  <div class="bottom-nav" id="bottomNav">
+    <button class="bnav-btn primary" onclick="createBooking()">
+      <span class="bnav-icon">&#128197;</span>
+      <span class="bnav-label">Book</span>
+    </button>
+    <button class="bnav-btn" onclick="viewVenueMap()">
+      <span class="bnav-icon">&#128506;</span>
+      <span class="bnav-label">Map</span>
+    </button>
+    <button class="bnav-btn" onclick="viewMyBookings()">
+      <span class="bnav-icon">&#128197;</span><span class="bnav-label">My Bookings</span>
+    </button>
+    <button class="bnav-btn" onclick="viewCalendar()">
+      <span class="bnav-icon">&#128198;</span>
+      <span class="bnav-label">Calendar</span>
+    </button>
+    <button class="bnav-btn" onclick="viewBandDirectory()">
+      <span class="bnav-icon">&#127928;</span>
+      <span class="bnav-label">Bands</span>
+    </button>
+    <button class="bnav-btn" onclick="viewVenueDirectory()">
+      <span class="bnav-icon">&#127963;</span>
+      <span class="bnav-label">Venues</span>
+    </button>
+    <button class="bnav-btn" onclick="toggleNotifDrawer()">
+      <span class="bnav-icon">&#128276;</span>
+      <span class="bnav-label">Alerts</span>
+    </button>
+  </div>
+
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner"></div>
+    <div class="loading-text" id="loadingText">Loading&#8230;</div>
+  </div>
+
+  <div class="toast-msg" id="toastMsg"></div>
+
+  <!-- ADD BAND MODAL -->
+  <div class="modal-backdrop" id="addBandModal" onclick="closeAddBand(event)">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h2>&#127928; Add New Band</h2>
+        <button class="modal-close" onclick="closeAddBandModal()">&#x2715;</button>
+      </div>
+      <div class="modal-body modal-form" id="abBody">
+        <div class="modal-success" id="abSuccess">&#10003; Band added successfully!</div>
+        <div class="modal-error"   id="abError"></div>
+
+        <div class="modal-section">Basic Information</div>
+        <div class="form-group"><label>Band Name <span class="req">*</span></label><input type="text" id="ab_bandName" required></div>
+        <div class="modal-row">
+          <div class="form-group"><label>Contact Name <span class="req">*</span></label><input type="text" id="ab_contactName" required></div>
+          <div class="form-group"><label>Name on W9</label><input type="text" id="ab_nameOnW9"></div>
+        </div>
+        <div class="modal-row">
+          <div class="form-group"><label>Email <span class="req">*</span></label><input type="email" id="ab_email" required></div>
+          <div class="form-group"><label>Phone <span class="req">*</span></label><input type="tel" id="ab_phone" required placeholder="555-1234"></div>
+        </div>
+        <div class="form-group"><label>W9 Status</label>
+          <select id="ab_w9"><option value="No">No</option><option value="Yes">Yes</option><option value="Pending">Pending</option></select>
+        </div>
+
+        <div class="modal-section">Payment Rates &amp; Commission</div>
+        <div class="modal-row">
+          <div class="form-group"><label>Pay Rate (No Sound/Lights) <span class="req">*</span></label><input type="number" id="ab_payNoSound" min="0" step="1" placeholder="500" oninput="abUpdateComm()"><div class="help-text">Venue provides sound</div></div>
+          <div class="form-group"><label>Pay Rate (With Sound/Lights) <span class="req">*</span></label><input type="number" id="ab_payWithSound" min="0" step="1" placeholder="750" oninput="abUpdateComm()"><div class="help-text">Band brings equipment</div></div>
+        </div>
+        <div class="modal-row">
+          <div class="form-group"><label>Private Party Rate</label><input type="number" id="ab_privateRate" min="0" step="1" placeholder="1000" oninput="abUpdateComm()"></div>
+          <div class="form-group"><label>Agency Commission <span class="req">*</span></label>
+            <div class="input-suffix-wrap"><input type="number" id="ab_commission" min="0" max="100" step="0.5" placeholder="15" oninput="abUpdateComm()"><span class="input-suffix">%</span></div>
+          </div>
+        </div>
+        <div class="comm-preview" id="abCommPreview">
+          <h4>&#128176; Agency Earnings Preview</h4>
+          <div class="comm-rows">
+            <span class="ch">Scenario</span><span class="ch" style="text-align:right;">Band Gets</span><span class="ch" style="text-align:right;">Agency Earns</span>
+            <span id="abCl1">No Sound/Lights</span><span class="cp" id="abCp1">—</span><span class="ce" id="abCe1">—</span>
+            <span id="abCl2">With Sound/Lights</span><span class="cp" id="abCp2">—</span><span class="ce" id="abCe2">—</span>
+            <span id="abCl3" style="display:none;">Private Party</span><span class="cp" id="abCp3" style="display:none;">—</span><span class="ce" id="abCe3" style="display:none;">—</span>
+          </div>
+        </div>
+
+        <div class="modal-section">Performance Details</div>
+        <div class="form-group"><label>Band Size <span class="req">*</span></label>
+          <div class="size-options">
+            <div class="size-option"><input type="radio" name="ab_size" id="ab_sizeSolo" value="Solo"><label for="ab_sizeSolo">&#127925; Solo</label></div>
+            <div class="size-option"><input type="radio" name="ab_size" id="ab_sizeDuo"  value="Duo"><label for="ab_sizeDuo">&#127926; Duo</label></div>
+            <div class="size-option"><input type="radio" name="ab_size" id="ab_sizeTrio" value="Trio"><label for="ab_sizeTrio">&#127927; Trio</label></div>
+            <div class="size-option"><input type="radio" name="ab_size" id="ab_sizeFull" value="Full Band"><label for="ab_sizeFull">&#127928; Full Band</label></div>
+          </div>
+        </div>
+        <div class="form-group"><label>Genre(s) <span class="req">*</span></label>
+          <div class="genre-grid" id="ab_gGrid">
+          <div class="genre-pill"><input type="checkbox" id="ab_g_rock" value="Rock" name="ab_genres" onchange="updateGenreDisplay('ab_g')"><label for="ab_g_rock">🎸 Rock</label></div>
+          <div class="genre-pill"><input type="checkbox" id="ab_g_classic" value="Classic Rock" name="ab_genres" onchange="updateGenreDisplay('ab_g')"><label for="ab_g_classic">🎙️ Classic Rock</label></div>
+          <div class="genre-pill"><input type="checkbox" id="ab_g_blues" value="Blues" name="ab_genres" onchange="updateGenreDisplay('ab_g')"><label for="ab_g_blues">🎺 Blues</label></div>
+          <div class="genre-pill"><input type="checkbox" id="ab_g_jazz" value="Jazz" name="ab_genres" onchange="updateGenreDisplay('ab_g')"><label for="ab_g_jazz">🎷 Jazz</label></div>
+          <div class="genre-pill"><input type="checkbox" id="ab_g_country" value="Country" name="ab_genres" onchange="updateGenreDisplay('ab_g')"><label for="ab_g_country">🤠 Country</label></div>
+          <div class="genre-pill"><input type="checkbox" id="ab_g_rb" value="R&B/Soul" name="ab_genres" onchange="updateGenreDisplay('ab_g')"><label for="ab_g_rb">🎤 R&amp;B/Soul</label></div>
+          <div class="genre-pill"><input type="checkbox" id="ab_g_folk" value="Folk" name="ab_genres" onchange="updateGenreDisplay('ab_g')"><label for="ab_g_folk">🪕 Folk</label></div>
+          <div class="genre-pill"><input type="checkbox" id="ab_g_alt" value="Alternative" name="ab_genres" onchange="updateGenreDisplay('ab_g')"><label for="ab_g_alt">⚡ Alternative</label></div>
+          <div class="genre-pill"><input type="checkbox" id="ab_g_funk" value="Funk" name="ab_genres" onchange="updateGenreDisplay('ab_g')"><label for="ab_g_funk">🕺 Funk</label></div>
+          <div class="genre-pill"><input type="checkbox" id="ab_g_pop" value="Pop" name="ab_genres" onchange="updateGenreDisplay('ab_g')"><label for="ab_g_pop">🌟 Pop</label></div>
+          <div class="genre-pill"><input type="checkbox" id="ab_g_cover" value="Cover Band" name="ab_genres" onchange="updateGenreDisplay('ab_g')"><label for="ab_g_cover">🎵 Cover Band</label></div>
+          <div class="genre-pill"><input type="checkbox" id="ab_g_tribal" value="Tribal Funk" name="ab_genres" onchange="updateGenreDisplay('ab_g')"><label for="ab_g_tribal">🥁 Tribal Funk</label></div>
+          <div class="genre-pill"><input type="checkbox" id="ab_g_reggae" value="Reggae" name="ab_genres" onchange="updateGenreDisplay('ab_g')"><label for="ab_g_reggae">🌴 Reggae</label></div>
+          <div class="genre-pill"><input type="checkbox" id="ab_g_hiphop" value="Hip-Hop" name="ab_genres" onchange="updateGenreDisplay('ab_g')"><label for="ab_g_hiphop">🎧 Hip-Hop</label></div>
+          <div class="genre-pill"><input type="checkbox" id="ab_g_metal" value="Metal" name="ab_genres" onchange="updateGenreDisplay('ab_g')"><label for="ab_g_metal">🤘 Metal</label></div>
+          <div class="genre-pill"><input type="checkbox" id="ab_g_other" value="Other" name="ab_genres" onchange="updateGenreDisplay('ab_g')"><label for="ab_g_other">🎼 Other</label></div>
+        </div>
+          <div class="genre-selected" id="ab_gDisplay"></div>
+          <div class="help-text">Select all genres that apply — used for venue matching</div>
+        </div>
+        <div class="modal-row">
+          <div class="form-group"><label>Number of Members <span class="req">*</span></label><input type="number" id="ab_members" min="1" max="20" placeholder="4" required></div>
+          <div class="form-group"><label>Typical Draw <span class="req">*</span></label><input type="number" id="ab_draw" min="0" placeholder="75" required oninput="abUpdateRating()"><div class="help-text">Avg people band brings</div></div>
+        </div>
+        <div class="modal-row">
+          <div class="form-group"><label>Band Rating (Auto)</label><input type="text" id="ab_rating" readonly style="background:var(--card2);"><div class="help-text">A=150+, B=75+, C=40+, D=25+</div></div>
+          <div class="form-group"><label>Hometown</label><input type="text" id="ab_hometown" placeholder="St. Louis, MO"></div>
+        </div>
+
+        <div class="modal-section">Travel</div>
+        <div class="modal-row">
+          <div class="form-group"><label>Can Travel?</label>
+            <select id="ab_travel"><option value="No">No</option><option value="Yes">Yes</option><option value="Regional Only">Regional Only</option></select>
+          </div>
+          <div class="form-group"><label>Max Distance (miles)</label><input type="number" id="ab_maxDist" min="0" placeholder="50"></div>
+        </div>
+
+        <div class="modal-section">Marketing &amp; Links</div>
+        <div class="modal-row">
+          <div class="form-group"><label>Promo Video</label><input type="url" id="ab_video" placeholder="https://youtube.com/..."></div>
+          <div class="form-group"><label>Facebook</label><input type="url" id="ab_facebook" placeholder="https://facebook.com/..."></div>
+        </div>
+        <div class="modal-row">
+          <div class="form-group"><label>Instagram</label><input type="url" id="ab_instagram" placeholder="https://instagram.com/..."></div>
+          <div class="form-group"><label>Website</label><input type="url" id="ab_website" placeholder="https://bandname.com"></div>
+        </div>
+        <div class="form-group"><label>Notes</label><textarea id="ab_notes" placeholder="Additional info…"></textarea></div>
+      </div>
+      <div class="modal-loading" id="abLoading"><div class="spinner" style="margin:0 auto 12px;"></div><p style="color:var(--muted);font-size:0.85rem;">Adding band…</p></div>
+      <div class="modal-footer" id="abFooter">
+        <button class="btn-cancel" onclick="closeAddBandModal()">Cancel</button>
+        <button class="btn-primary" id="abSubmitBtn" onclick="abSubmit()">&#127928; Add Band</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADD VENUE MODAL -->
+  <div class="modal-backdrop" id="addVenueModal" onclick="closeAddVenue(event)">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h2>&#127970; Add New Venue</h2>
+        <button class="modal-close" onclick="closeAddVenueModal()">&#x2715;</button>
+      </div>
+      <div class="modal-body modal-form" id="avBody">
+        <div class="modal-success" id="avSuccess">&#10003; Venue added successfully!</div>
+        <div class="modal-error"   id="avError"></div>
+
+        <div class="modal-section">Venue Information</div>
+        <div class="form-group"><label>Venue Name <span class="req">*</span></label><input type="text" id="av_venueName" required></div>
+        <div class="modal-row">
+          <div class="form-group"><label>Address</label><input type="text" id="av_address"></div>
+          <div class="form-group"><label>City <span class="req">*</span></label><input type="text" id="av_city" required></div>
+        </div>
+        <div class="modal-row">
+          <div class="form-group"><label>State</label><input type="text" id="av_state" placeholder="MO" maxlength="2"></div>
+          <div class="form-group"><label>Zip</label><input type="text" id="av_zip" placeholder="63101"></div>
+        </div>
+        <div class="modal-row">
+          <div class="form-group"><label>Capacity</label><input type="number" id="av_capacity" min="0" placeholder="200"></div>
+          <div class="form-group"><label>Exclusivity</label>
+            <select id="av_exclusivity">
+              <option value="">— Select —</option>
+              <option value="Exclusive">Exclusive</option>
+              <option value="Non-Exclusive">Non-Exclusive</option>
+              <option value="Preferred">Preferred</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="modal-section">Contact Information</div>
+        <div class="modal-row">
+          <div class="form-group"><label>Contact Name <span class="req">*</span></label><input type="text" id="av_contactName" required></div>
+          <div class="form-group"><label>Email <span class="req">*</span></label><input type="email" id="av_email" required></div>
+        </div>
+        <div class="modal-row">
+          <div class="form-group"><label>Phone</label><input type="tel" id="av_phone" placeholder="555-1234"></div>
+          <div class="form-group"><label>Activity Status</label>
+            <select id="av_status">
+              <option value="Booked">Booked</option>
+              <option value="Yellow">Yellow</option>
+              <option value="Prospect (Green)">Prospect (Green)</option>
+              <option value="Prospect (Blue)">Prospect (Blue)</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="modal-section">Equipment &amp; Budget</div>
+        <div class="modal-row">
+          <div class="form-group"><label>Has Sound System?</label>
+            <select id="av_sound">
+              <option value="">— Select —</option>
+              <option value="Yes">Yes — full PA</option>
+              <option value="Partial">Partial — basic system</option>
+              <option value="No">No — band must bring</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Has Stage Lighting?</label>
+            <select id="av_lighting">
+              <option value="">— Select —</option>
+              <option value="Yes">Yes — full rig</option>
+              <option value="Partial">Partial — basic lights</option>
+              <option value="No">No — band must bring</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group"><label>Pay Rate Budget / Show ($)</label>
+          <input type="number" id="av_budget" min="0" step="25" placeholder="1000">
+          <div class="help-text">Maximum the venue pays per booking</div>
+        </div>
+
+        <div class="modal-section">Band Matching Preferences</div>
+        <div class="form-group"><label>Preferred Genres <span class="req">*</span></label>
+          <div class="genre-grid" id="av_gGrid">
+          <div class="genre-pill"><input type="checkbox" id="av_g_rock" value="Rock" name="av_genres" onchange="updateGenreDisplay('av_g')"><label for="av_g_rock">🎸 Rock</label></div>
+          <div class="genre-pill"><input type="checkbox" id="av_g_classic" value="Classic Rock" name="av_genres" onchange="updateGenreDisplay('av_g')"><label for="av_g_classic">🎙️ Classic Rock</label></div>
+          <div class="genre-pill"><input type="checkbox" id="av_g_blues" value="Blues" name="av_genres" onchange="updateGenreDisplay('av_g')"><label for="av_g_blues">🎺 Blues</label></div>
+          <div class="genre-pill"><input type="checkbox" id="av_g_jazz" value="Jazz" name="av_genres" onchange="updateGenreDisplay('av_g')"><label for="av_g_jazz">🎷 Jazz</label></div>
+          <div class="genre-pill"><input type="checkbox" id="av_g_country" value="Country" name="av_genres" onchange="updateGenreDisplay('av_g')"><label for="av_g_country">🤠 Country</label></div>
+          <div class="genre-pill"><input type="checkbox" id="av_g_rb" value="R&B/Soul" name="av_genres" onchange="updateGenreDisplay('av_g')"><label for="av_g_rb">🎤 R&amp;B/Soul</label></div>
+          <div class="genre-pill"><input type="checkbox" id="av_g_folk" value="Folk" name="av_genres" onchange="updateGenreDisplay('av_g')"><label for="av_g_folk">🪕 Folk</label></div>
+          <div class="genre-pill"><input type="checkbox" id="av_g_alt" value="Alternative" name="av_genres" onchange="updateGenreDisplay('av_g')"><label for="av_g_alt">⚡ Alternative</label></div>
+          <div class="genre-pill"><input type="checkbox" id="av_g_funk" value="Funk" name="av_genres" onchange="updateGenreDisplay('av_g')"><label for="av_g_funk">🕺 Funk</label></div>
+          <div class="genre-pill"><input type="checkbox" id="av_g_pop" value="Pop" name="av_genres" onchange="updateGenreDisplay('av_g')"><label for="av_g_pop">🌟 Pop</label></div>
+          <div class="genre-pill"><input type="checkbox" id="av_g_cover" value="Cover Band" name="av_genres" onchange="updateGenreDisplay('av_g')"><label for="av_g_cover">🎵 Cover Band</label></div>
+          <div class="genre-pill"><input type="checkbox" id="av_g_tribal" value="Tribal Funk" name="av_genres" onchange="updateGenreDisplay('av_g')"><label for="av_g_tribal">🥁 Tribal Funk</label></div>
+          <div class="genre-pill"><input type="checkbox" id="av_g_reggae" value="Reggae" name="av_genres" onchange="updateGenreDisplay('av_g')"><label for="av_g_reggae">🌴 Reggae</label></div>
+          <div class="genre-pill"><input type="checkbox" id="av_g_hiphop" value="Hip-Hop" name="av_genres" onchange="updateGenreDisplay('av_g')"><label for="av_g_hiphop">🎧 Hip-Hop</label></div>
+          <div class="genre-pill"><input type="checkbox" id="av_g_metal" value="Metal" name="av_genres" onchange="updateGenreDisplay('av_g')"><label for="av_g_metal">🤘 Metal</label></div>
+          <div class="genre-pill"><input type="checkbox" id="av_g_other" value="Other" name="av_genres" onchange="updateGenreDisplay('av_g')"><label for="av_g_other">🎼 Other</label></div>
+        </div>
+          <div class="genre-selected" id="av_gDisplay"></div>
+          <div class="help-text">Bands matching these genres rank highest in suggestions</div>
+        </div>
+        <div class="form-group"><label>Preferred Band Sizes</label>
+          <div class="genre-grid" id="av_szGrid">
+            <div class="genre-pill"><input type="checkbox" id="av_sz1" value="1"  name="av_sizes" onchange="avUpdateSizes()"><label for="av_sz1">&#127908; Solo</label></div>
+            <div class="genre-pill"><input type="checkbox" id="av_sz2" value="2"  name="av_sizes" onchange="avUpdateSizes()"><label for="av_sz2">&#128101; Duo</label></div>
+            <div class="genre-pill"><input type="checkbox" id="av_sz3" value="3"  name="av_sizes" onchange="avUpdateSizes()"><label for="av_sz3">&#127925; Trio</label></div>
+            <div class="genre-pill"><input type="checkbox" id="av_sz4" value="4"  name="av_sizes" onchange="avUpdateSizes()"><label for="av_sz4">&#127928; 4-Piece</label></div>
+            <div class="genre-pill"><input type="checkbox" id="av_sz5" value="5"  name="av_sizes" onchange="avUpdateSizes()"><label for="av_sz5">&#127926; 5-Piece</label></div>
+            <div class="genre-pill"><input type="checkbox" id="av_sz6" value="6+" name="av_sizes" onchange="avUpdateSizes()"><label for="av_sz6">&#127930; 6+ Large</label></div>
+          </div>
+          <div class="help-text">Leave blank to accept any size</div>
+        </div>
+        <div class="modal-row">
+          <div class="form-group"><label>Min Band Rating</label>
+            <select id="av_minRating">
+              <option value="">Any Rating</option>
+              <option value="D">D or above (25+ draw)</option>
+              <option value="C">C or above (40+ draw)</option>
+              <option value="B">B or above (75+ draw)</option>
+              <option value="A">A only (150+ draw)</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Travel Preference</label>
+            <select id="av_travelPref">
+              <option value="Any">Any</option>
+              <option value="Local Only">Local Only (&lt;50 miles)</option>
+              <option value="Regional">Regional (&lt;200 miles)</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-row">
+          <div class="form-group"><label>Min Band Draw</label>
+            <input type="number" id="av_minDraw" min="0" step="5" placeholder="0 = any">
+          </div>
+          <div class="form-group"><label>Preferred Days</label>
+            <input type="text" id="av_prefDays" placeholder="e.g. Friday, Saturday">
+          </div>
+        </div>
+
+        <div class="modal-section">Notes</div>
+        <div class="form-group"><label>Notes</label><textarea id="av_notes" placeholder="Additional information about the venue…"></textarea></div>
+      </div>
+      <div class="modal-loading" id="avLoading"><div class="spinner" style="margin:0 auto 12px;"></div><p style="color:var(--muted);font-size:0.85rem;">Adding venue…</p></div>
+      <div class="modal-footer" id="avFooter">
+        <button class="btn-cancel" onclick="closeAddVenueModal()">Cancel</button>
+        <button class="btn-primary" id="avSubmitBtn" onclick="avSubmit()">&#127970; Add Venue</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Nav overlay -->
+  <div id="navOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:14px;padding:32px 36px;max-width:380px;width:90%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.3);">
+      <div style="font-size:2rem;margin-bottom:12px;">&#127925;</div>
+      <div id="navOverlayTitle" style="font-size:1.1rem;font-weight:800;color:#1a1408;margin-bottom:6px;"></div>
+      <div id="navOverlaySubtitle" style="font-size:0.85rem;color:#6b5e48;margin-bottom:22px;"></div>
+      <a id="navOverlayLink" href="#"
+        style="display:block;background:#A07018;color:#fff;padding:13px 24px;border-radius:8px;text-decoration:none;font-weight:800;font-size:0.95rem;letter-spacing:0.5px;margin-bottom:10px;">
+        Open Create Booking &#8594;
+      </a>
+      <button onclick="document.getElementById('navOverlay').style.display='none';"
+        style="background:none;border:none;color:#888;font-size:0.85rem;cursor:pointer;font-family:inherit;">
+        Cancel
+      </button>
+    </div>
+  </div>
+
+  <script src="api.js"></script>
+  <script src="agent-dashboard.js"></script>
+</body>
+</html>
