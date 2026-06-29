@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#A07018">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Dave Kalz Agency">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <title>Add Venue — Dave Kalz Agency</title>
+  <style>
+    :root {
+      --primary: #A07018;
+      --primary-light: #e8f0fb;
+      --teal: #C8960C;
+      --red: #D32F2F;
+      --gold: #D4A017;
+      --green: #7CB342;
+      --green-dark: #558B2F;
+      --border: #e2e8f0;
+      --text: #1a202c;
+      --text-muted: #64748b;
+      --bg: #f7f9fc;
+      --card: #ffffff;
+      --muted: #64748b;
+      --bronze1: #C8960C;
+      --bronze2: #A07018;
+      --bronze3: #7A5210;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background:var(--bg); min-height: 100vh; padding: 28px 16px; }
+    .container { background:var(--card); max-width: 860px; margin: 0 auto; padding: 0 40px 40px; border-radius: 18px; overflow:hidden; box-shadow: 0 8px 40px rgba(0,0,0,0.2); }
+    .color-bars { display: flex; gap: 4px; height: 4px; margin: 18px 0 0; }
+    .bar { flex: 1; border-radius: 2px; }
+    .section-title { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color:var(--bronze3); background: var(--primary-light); padding: 8px 14px; border-radius: 6px; margin: 36px 0 20px; display: flex; align-items: center; gap: 8px; }
+    .section-title:first-of-type { margin-top: 0; }
+    .section-title .section-icon { font-size: 1rem; }
+    .form-group { margin-bottom: 22px; }
+    label { display: block; font-weight: 600; color: var(--text); margin-bottom: 8px; font-size: 0.9rem; }
+    .required { color: var(--red); }
+    input[type="text"], input[type="email"], input[type="tel"], input[type="number"], input[type="url"], select, textarea {
+      width: 100%; padding: 11px 14px; border: 2px solid var(--border); border-radius: 8px; font-size: 0.95rem;
+      font-family: 'Inter', sans-serif; color: var(--text); transition: border-color 0.2s, box-shadow 0.2s; background:var(--card); box-sizing: border-box;
+    }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--bronze2); box-shadow:0 0 0 3px rgba(160,112,24,0.1); }
+    textarea { resize: vertical; min-height: 90px; }
+    .help-text { font-size: 0.8rem; color: var(--muted); margin-top: 5px; font-style: italic; }
+    .row   { display: grid; grid-template-columns: 1fr 1fr;     gap: 18px; }
+    .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; }
+    .tag-picker { border: 2px solid var(--border); border-radius: 10px; padding: 14px; background: var(--bg); transition: border-color 0.2s; }
+    .tag-picker:focus-within { border-color: var(--bronze2); box-shadow: 0 0 0 3px rgba(160,112,24,0.08); }
+    .tag-picker-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tag-option { display: none; }
+    .tag-label { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 20px; border: 2px solid var(--border); background:var(--card); font-size: 0.82rem; font-weight: 600; color: var(--muted); cursor: pointer; transition: all 0.15s; user-select: none; }
+    .tag-label:hover { border-color: var(--bronze2); color: var(--bronze2); }
+    .tag-option:checked + .tag-label { background:linear-gradient(160deg,#3a2608 0%,#6a4a10 10%,#a07020 20%,#d4a030 30%,#f0c050 42%,#e8b838 50%,#c08820 60%,#906010 70%,#6a4810 82%,#4a3008 90%,#2e1e06 100%); border-color: var(--bronze2); color: white; }
+    .tag-option.genre-rock:checked    + .tag-label { background: #c62828; border-color: #c62828; }
+    .tag-option.genre-blues:checked   + .tag-label { background: #283593; border-color: #283593; }
+    .tag-option.genre-jazz:checked    + .tag-label { background: #4a148c; border-color: #4a148c; }
+    .tag-option.genre-country:checked + .tag-label { background: #e65100; border-color: #e65100; }
+    .tag-option.genre-rb:checked      + .tag-label { background: #880e4f; border-color: #880e4f; }
+    .tag-option.genre-folk:checked    + .tag-label { background: #33691e; border-color: #33691e; }
+    .tag-option.genre-alt:checked     + .tag-label { background: #006064; border-color: #006064; }
+    .tag-option.genre-classic:checked + .tag-label { background: #37474f; border-color: #37474f; }
+    .tag-option.genre-funk:checked    + .tag-label { background: #f9a825; border-color: #f9a825; color: #1a202c; }
+    .tag-option.genre-pop:checked     + .tag-label { background: #ad1457; border-color: #ad1457; }
+    .tag-option.genre-cover:checked   + .tag-label { background: #00695c; border-color: #00695c; }
+    .tag-option.genre-other:checked   + .tag-label { background: #455a64; border-color: #455a64; }
+    .tag-option.genre-tribal:checked + .tag-label  { background: #4e342e; border-color: #4e342e; }
+    .tag-option.genre-reggae:checked + .tag-label  { background: #1b5e20; border-color: #1b5e20; }
+    .tag-option.genre-hiphop:checked + .tag-label  { background: #212121; border-color: #212121; }
+    .tag-option.genre-metal:checked  + .tag-label  { background: #b71c1c; border-color: #b71c1c; }
+    .slider-row { display: flex; align-items: center; gap: 14px; }
+    .slider-row input[type="range"] { flex: 1; padding: 0; border: none; box-shadow: none; height: 6px; accent-color: var(--bronze2); }
+    .slider-row input[type="range"]:focus { box-shadow: none; }
+    .slider-val { font-family: 'JetBrains Mono', monospace; font-size: 0.95rem; font-weight: 600; color: var(--bronze2); min-width: 60px; text-align: right; }
+    .radio-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+    .radio-card-input { display: none; }
+    .radio-card-label { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 10px; border-radius: 10px; border: 2px solid var(--border); background:var(--card); cursor: pointer; font-size: 0.8rem; font-weight: 600; color: var(--muted); text-align: center; transition: all 0.15s; user-select: none; }
+    .radio-card-label .rc-icon { font-size: 1.4rem; }
+    .radio-card-label:hover { border-color: var(--bronze2); color: var(--bronze2); }
+    .radio-card-input:checked + .radio-card-label { background: var(--bronze2); border-color: var(--bronze2); color: white; }
+    .geocode-status { font-size: 0.85rem; margin-top: 8px; padding: 8px 12px; border-radius: 6px; display: none; }
+    .geocode-status.success { background: #e8f5e9; color: #2e7d32; display: block; }
+    .geocode-status.error   { background: #ffebee; color: #c62828; display: block; }
+    .geocode-status.loading { background: #e3f2fd; color: #1976d2; display: block; }
+    .rating-display { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--bg); border: 2px solid var(--border); border-radius: 8px; }
+    .rating-badge { width: 42px; height: 42px; border-radius: 10px; background: var(--bronze2); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; flex-shrink: 0; }
+    .rating-desc { font-size: 0.85rem; color: var(--muted); }
+    .rating-desc strong { color: var(--text); font-size: 0.92rem; }
+    .success-message, .error-message { padding: 18px 20px; border-radius: 10px; margin-bottom: 24px; display: none; font-size: 0.95rem; }
+    .success-message { background: #e8f5e9; color: #2e7d32; border-left: 5px solid #4caf50; }
+    .error-message   { background: #ffebee; color: #c62828; border-left: 5px solid #f44336; }
+    .success-message a { color: #2e7d32; font-weight: 700; }
+    .loading { display: none; text-align: center; padding: 50px; }
+    .spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--bronze2); border-radius: 50%; width: 48px; height: 48px; animation: spin 0.8s linear infinite; margin: 0 auto 14px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .button-group { display: flex; gap: 14px; margin-top: 36px; padding-top: 28px; border-top: 1px solid var(--border); }
+    .btn-primary { flex: 2; padding: 14px 28px; background:linear-gradient(160deg,#3a2608 0%,#6a4a10 10%,#a07020 20%,#d4a030 30%,#f0c050 42%,#e8b838 50%,#c08820 60%,#906010 70%,#6a4810 82%,#4a3008 90%,#2e1e06 100%); color: white; border: none; border-radius: 10px; font-size: 1rem; font-weight: 700; font-family: 'Inter', sans-serif; cursor: pointer; transition: all 0.2s; }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(160,112,24,0.3); }
+    .btn-secondary { flex: 1; padding: 14px 28px; background: var(--bg); color: var(--muted); border: 2px solid var(--border); border-radius: 10px; font-size: 1rem; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; transition: all 0.2s; }
+    .btn-secondary:hover { background: #e2e8f0; color: var(--text); }
+    .field-divider { border: none; border-top: 1px solid var(--border); margin: 10px 0 20px; }
+    .pref-summary { background: linear-gradient(135deg, #e8f0fb, #e0f7fa); border: 1.5px solid #b3cdf5; border-radius: 10px; padding: 16px 20px; margin-top: 28px; display: none; }
+    .pref-summary h4 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.8px; color: var(--bronze2); margin-bottom: 10px; font-weight: 700; }
+    .pref-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .pref-chip { background: var(--bronze2); color: white; font-size: 0.75rem; font-weight: 600; padding: 3px 10px; border-radius: 12px; }
+    .pref-chip.teal  { background: var(--bronze1); }
+    .pref-chip.green { background: var(--green); }
+    .pref-chip.gold  { background: #b7860a; }
+    h1 { display:none; }
+    .topbar { background:linear-gradient(160deg,#3a2608 0%,#6a4a10 10%,#a07020 20%,#d4a030 30%,#f0c050 42%,#e8b838 50%,#c08820 60%,#906010 70%,#6a4810 82%,#4a3008 90%,#2e1e06 100%); border-bottom:1px solid rgba(200,150,50,0.2); padding:0 24px; display:flex; align-items:center; justify-content:space-between; height:48px; z-index:200; box-shadow:0 2px 20px rgba(0,0,0,0.25); border-radius:16px 16px 0 0; margin:0 -40px; }
+    .topbar-brand { display:flex; align-items:center; gap:10px; }
+    .brand-logo { width:36px; height:36px; object-fit:contain; filter:invert(1) brightness(1.2); }
+    .brand-text { display:flex; flex-direction:column; gap:1px; }
+    .brand-name { font-size:0.85rem; font-weight:600; color:#f5ead0; letter-spacing:0.3px; }
+    .brand-sub  { font-size:0.6rem; font-weight:400; letter-spacing:1.5px; text-transform:uppercase; color:rgba(240,192,80,0.7); }
+    .topbar-right { display:flex; align-items:center; gap:8px; }
+    .btn-topbar { background:rgba(0,0,0,0.2); color:rgba(245,234,208,0.85); border:1px solid rgba(200,160,60,0.25); padding:5px 14px; border-radius:6px; font-size:0.75rem; font-weight:600; font-family:inherit; letter-spacing:0.5px; cursor:pointer; transition:all 0.2s; white-space:nowrap; }
+    .btn-topbar:hover { border-color:rgba(240,192,80,0.5); color:rgba(240,192,80,1); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="topbar">
+      <div class="topbar-brand">
+        <img class="brand-logo" src="icons/dka-logo.png" alt="DKA">
+        <div class="brand-text">
+          <div class="brand-name">Dave Kalz Agency</div>
+          <div class="brand-sub">Add Venue</div>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <button class="btn-topbar" onclick="goToDashboard()">&#8592; Dashboard</button>
+      </div>
+    </div>
+    <div style="padding-top:24px;">
+      <div class="success-message" id="successMsg">
+        <strong>✓ Venue added successfully!</strong><br>
+        <span style="font-size:0.9rem;color:#666;">Returning to dashboard in 2 seconds&hellip;</span><br>
+        <a href="#" onclick="addAnother(); return false;" style="margin-top:6px;display:inline-block;">Add another venue</a> or
+        <a href="#" onclick="goToDashboard(); return false;">go now</a>
+      </div>
+
+      <div class="error-message" id="errorMsg"></div>
+
+      <form id="addVenueForm" onsubmit="return handleSubmit(event)">
+
+        <div class="section-title"><span class="section-icon">📋</span> Basic Information</div>
+
+        <div class="form-group">
+          <label>Venue Name <span class="required">*</span></label>
+          <input type="text" id="venueName" required placeholder="The Blue Note">
+        </div>
+
+        <div class="row">
+          <div class="form-group">
+            <label>Contact Name <span class="required">*</span></label>
+            <input type="text" id="contactName" required placeholder="Jane Smith">
+          </div>
+          <div class="form-group">
+            <label>Phone <span class="required">*</span></label>
+            <input type="tel" id="phone" required placeholder="555-1234">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Email <span class="required">*</span></label>
+          <input type="email" id="email" required placeholder="booking@venue.com">
+        </div>
+
+        <div class="section-title"><span class="section-icon">📍</span> Location</div>
+
+        <div class="form-group">
+          <label>Street Address <span class="required">*</span></label>
+          <input type="text" id="address" required placeholder="123 Main Street" onblur="triggerGeocode()">
+          <div class="geocode-status" id="geocodeStatus"></div>
+          <div class="help-text">Coordinates are auto-detected for the venue map</div>
+        </div>
+
+        <div class="row-3">
+          <div class="form-group">
+            <label>City <span class="required">*</span></label>
+            <input type="text" id="city" required placeholder="St. Louis" onblur="triggerGeocode()">
+          </div>
+          <div class="form-group">
+            <label>State <span class="required">*</span></label>
+            <select id="state" required onchange="triggerGeocode()">
+              <option value="">-- Select --</option>
+              <option value="AL">AL</option><option value="AR">AR</option>
+              <option value="IA">IA</option><option value="IL">IL</option>
+              <option value="IN">IN</option><option value="KS">KS</option>
+              <option value="KY">KY</option><option value="MO">MO</option>
+              <option value="MS">MS</option><option value="OK">OK</option>
+              <option value="TN">TN</option><option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Zip Code <span class="required">*</span></label>
+            <input type="text" id="zip" required placeholder="63101">
+          </div>
+        </div>
+
+        <input type="hidden" id="latitude">
+        <input type="hidden" id="longitude">
+
+        <div class="section-title"><span class="section-icon">🏛️</span> Venue Details</div>
+
+        <div class="row">
+          <div class="form-group">
+            <label>Capacity <span class="required">*</span></label>
+            <input type="number" id="capacity" required min="1" placeholder="200" oninput="updateVenueRating()">
+            <div class="help-text">Maximum occupancy</div>
+          </div>
+          <div class="form-group">
+            <label>Venue Rating</label>
+            <div class="rating-display" id="ratingDisplay">
+              <div class="rating-badge" id="ratingBadge">–</div>
+              <div class="rating-desc" id="ratingDesc"><strong>Enter capacity</strong><br>auto-calculated</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="form-group">
+            <label>Has Sound System? <span class="required">*</span></label>
+            <select id="hasSound" required>
+              <option value="">-- Select --</option>
+              <option value="Yes">Yes — full PA in house</option>
+              <option value="Partial">Partial — basic system only</option>
+              <option value="No">No — band must bring</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Has Stage Lighting? <span class="required">*</span></label>
+            <select id="hasLighting" required>
+              <option value="">-- Select --</option>
+              <option value="Yes">Yes — full rig</option>
+              <option value="Partial">Partial — basic lights</option>
+              <option value="No">No — band must bring</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="section-title"><span class="section-icon">🤝</span> Agency Relationship</div>
+
+        <div class="form-group">
+          <label>Exclusivity Status <span class="required">*</span></label>
+          <select id="exclusivity" required>
+            <option value="">-- Select --</option>
+            <option value="Exclusive (Green)">🟢 Exclusive — Books only through Dave Kalz Agency</option>
+            <option value="Shared (Yellow)">🟡 Shared — Books with DK and other agencies</option>
+            <option value="Competitor Only (Red)">🔴 Competitor Only — Uses other agencies only</option>
+            <option value="No Agency (Blue)">🔵 No Agency — Not using any agency currently</option>
+          </select>
+          <div class="help-text">Determines pin color on the venue map</div>
+        </div>
+
+        <div class="section-title"><span class="section-icon">🎵</span> Band Preferences &amp; Matching Criteria</div>
+        <p style="font-size:0.85rem;color:var(--muted);margin-bottom:20px;">
+          This section is used by the system to automatically suggest and rank bands for this venue.
+          The more detail you fill in, the better the matches will be.
+        </p>
+
+        <div class="form-group">
+          <label>Preferred Genres <span class="required">*</span> <span style="font-weight:400;color:var(--muted);">— select all that apply</span></label>
+          <div class="tag-picker">
+            <div class="tag-picker-grid" id="genreGrid">
+              <input class="tag-option genre-rock"    type="checkbox" id="g_rock"     value="Rock"         name="genres"><label class="tag-label" for="g_rock">🎸 Rock</label>
+              <input class="tag-option genre-classic" type="checkbox" id="g_classic"  value="Classic Rock" name="genres"><label class="tag-label" for="g_classic">🎙️ Classic Rock</label>
+              <input class="tag-option genre-blues"   type="checkbox" id="g_blues"    value="Blues"        name="genres"><label class="tag-label" for="g_blues">🎺 Blues</label>
+              <input class="tag-option genre-jazz"    type="checkbox" id="g_jazz"     value="Jazz"         name="genres"><label class="tag-label" for="g_jazz">🎷 Jazz</label>
+              <input class="tag-option genre-country" type="checkbox" id="g_country"  value="Country"      name="genres"><label class="tag-label" for="g_country">🤠 Country</label>
+              <input class="tag-option genre-rb"      type="checkbox" id="g_rb"       value="R&amp;B/Soul" name="genres"><label class="tag-label" for="g_rb">🎤 R&amp;B/Soul</label>
+              <input class="tag-option genre-folk"    type="checkbox" id="g_folk"     value="Folk"         name="genres"><label class="tag-label" for="g_folk">🪕 Folk</label>
+              <input class="tag-option genre-alt"     type="checkbox" id="g_alt"      value="Alternative"  name="genres"><label class="tag-label" for="g_alt">⚡ Alternative</label>
+              <input class="tag-option genre-funk"    type="checkbox" id="g_funk"     value="Funk"         name="genres"><label class="tag-label" for="g_funk">🕺 Funk</label>
+              <input class="tag-option genre-pop"     type="checkbox" id="g_pop"      value="Pop"          name="genres"><label class="tag-label" for="g_pop">🌟 Pop</label>
+              <input class="tag-option genre-cover"   type="checkbox" id="g_cover"    value="Cover Band"   name="genres"><label class="tag-label" for="g_cover">🎵 Cover Band</label>
+              <input class="tag-option genre-tribal"  type="checkbox" id="g_tribal"   value="Tribal Funk"  name="genres"><label class="tag-label" for="g_tribal">🥁 Tribal Funk</label>
+              <input class="tag-option genre-reggae"  type="checkbox" id="g_reggae"   value="Reggae"       name="genres"><label class="tag-label" for="g_reggae">🌴 Reggae</label>
+              <input class="tag-option genre-hiphop"  type="checkbox" id="g_hiphop"   value="Hip-Hop"      name="genres"><label class="tag-label" for="g_hiphop">🎧 Hip-Hop</label>
+              <input class="tag-option genre-metal"   type="checkbox" id="g_metal"    value="Metal"        name="genres"><label class="tag-label" for="g_metal">🤘 Metal</label>
+              <input class="tag-option genre-other"   type="checkbox" id="g_other"    value="Other"        name="genres"><label class="tag-label" for="g_other">🎼 Other</label>
+            </div>
+          </div>
+          <div class="help-text">Bands matching these genres will rank highest in suggestions</div>
+        </div>
+
+        <div class="form-group">
+          <label>Pay Rate Budget Per Show <span class="required">*</span></label>
+          <input type="number" id="payRateBudget" required min="0" step="25" placeholder="750" oninput="updateBudgetDisplay()">
+          <div class="help-text" id="budgetHelp">Only bands whose rate falls within this budget will be shown</div>
+        </div>
+
+        <div class="form-group">
+          <label>Minimum Band Draw Expected</label>
+          <div class="slider-row">
+            <input type="range" id="minDrawSlider" min="0" max="300" step="5" value="0" oninput="updateDrawDisplay()">
+            <span class="slider-val" id="minDrawVal">Any</span>
+          </div>
+          <div class="help-text">Bands must typically draw at least this many people to be suggested</div>
+        </div>
+
+        <div class="form-group">
+          <label>Minimum Band Rating</label>
+          <div class="radio-cards">
+            <input class="radio-card-input" type="radio" id="rat_any" name="minRating" value="" checked>
+            <label class="radio-card-label" for="rat_any"><span class="rc-icon">🌐</span>Any Rating</label>
+
+            <input class="radio-card-input" type="radio" id="rat_d" name="minRating" value="D">
+            <label class="radio-card-label" for="rat_d"><span class="rc-icon">🥉</span>D or above<br><small>25+ draw</small></label>
+
+            <input class="radio-card-input" type="radio" id="rat_c" name="minRating" value="C">
+            <label class="radio-card-label" for="rat_c"><span class="rc-icon">🥈</span>C or above<br><small>40+ draw</small></label>
+
+            <input class="radio-card-input" type="radio" id="rat_b" name="minRating" value="B">
+            <label class="radio-card-label" for="rat_b"><span class="rc-icon">🥇</span>B or above<br><small>75+ draw</small></label>
+
+            <input class="radio-card-input" type="radio" id="rat_a" name="minRating" value="A">
+            <label class="radio-card-label" for="rat_a"><span class="rc-icon">⭐</span>A only<br><small>150+ draw</small></label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Preferred Band Size <span style="font-weight:400;color:var(--muted);">— select all that apply</span></label>
+          <div class="tag-picker">
+            <div class="tag-picker-grid">
+              <input class="tag-option" type="checkbox" id="sz_solo"  value="1"   name="bandSizes">
+              <label class="tag-label" for="sz_solo">🎤 Solo (1)</label>
+
+              <input class="tag-option" type="checkbox" id="sz_duo"   value="2"   name="bandSizes">
+              <label class="tag-label" for="sz_duo">👥 Duo (2)</label>
+
+              <input class="tag-option" type="checkbox" id="sz_trio"  value="3"   name="bandSizes">
+              <label class="tag-label" for="sz_trio">🎵 Trio (3)</label>
+
+              <input class="tag-option" type="checkbox" id="sz_4"     value="4"   name="bandSizes">
+              <label class="tag-label" for="sz_4">🎸 4-Piece</label>
+
+              <input class="tag-option" type="checkbox" id="sz_5"     value="5"   name="bandSizes">
+              <label class="tag-label" for="sz_5">🎶 5-Piece</label>
+
+              <input class="tag-option" type="checkbox" id="sz_large" value="6+"  name="bandSizes">
+              <label class="tag-label" for="sz_large">🎺 6+ (Large)</label>
+            </div>
+          </div>
+          <div class="help-text">Leave blank to allow any size</div>
+        </div>
+
+        <div class="form-group">
+          <label>Preferred Booking Nights <span style="font-weight:400;color:var(--muted);">— select all that apply</span></label>
+          <div class="tag-picker">
+            <div class="tag-picker-grid">
+              <input class="tag-option" type="checkbox" id="d_mon" value="Monday"    name="prefDays">
+              <label class="tag-label" for="d_mon">Mon</label>
+              <input class="tag-option" type="checkbox" id="d_tue" value="Tuesday"   name="prefDays">
+              <label class="tag-label" for="d_tue">Tue</label>
+              <input class="tag-option" type="checkbox" id="d_wed" value="Wednesday" name="prefDays">
+              <label class="tag-label" for="d_wed">Wed</label>
+              <input class="tag-option" type="checkbox" id="d_thu" value="Thursday"  name="prefDays">
+              <label class="tag-label" for="d_thu">Thu</label>
+              <input class="tag-option" type="checkbox" id="d_fri" value="Friday"    name="prefDays">
+              <label class="tag-label" for="d_fri">🌟 Fri</label>
+              <input class="tag-option" type="checkbox" id="d_sat" value="Saturday"  name="prefDays">
+              <label class="tag-label" for="d_sat">🌟 Sat</label>
+              <input class="tag-option" type="checkbox" id="d_sun" value="Sunday"    name="prefDays">
+              <label class="tag-label" for="d_sun">Sun</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Band Travel Preference</label>
+          <div class="radio-cards">
+            <input class="radio-card-input" type="radio" id="trav_any"    name="travelPref" value="Any" checked>
+            <label class="radio-card-label" for="trav_any"><span class="rc-icon">🌍</span>Any</label>
+
+            <input class="radio-card-input" type="radio" id="trav_local"  name="travelPref" value="Local Only">
+            <label class="radio-card-label" for="trav_local"><span class="rc-icon">📍</span>Local Only<br><small>&lt;50 miles</small></label>
+
+            <input class="radio-card-input" type="radio" id="trav_region" name="travelPref" value="Regional">
+            <label class="radio-card-label" for="trav_region"><span class="rc-icon">🗺️</span>Regional<br><small>&lt;200 miles</small></label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Additional Preferences / Requirements</label>
+          <textarea id="prefNotes" placeholder="e.g. No heavy metal. Prefer bands that bring their own PA. No bands that need more than 45 min setup. Must have at least 2 original songs in the set."></textarea>
+          <div class="help-text">These notes are shown to agents when matching bands to this venue</div>
+        </div>
+
+        <div class="pref-summary" id="prefSummary">
+          <h4>✓ Matching Profile Preview</h4>
+          <div class="pref-chips" id="prefChips"></div>
+        </div>
+
+        <hr class="field-divider">
+
+        <div class="section-title"><span class="section-icon">📝</span> General Notes</div>
+
+        <div class="form-group">
+          <label>Internal Notes</label>
+          <textarea id="notes" placeholder="Internal notes about this venue (parking, load-in door, contact preferences, history with Dave Kalz Agency…)"></textarea>
+        </div>
+
+        <div class="loading" id="loading">
+          <div class="spinner"></div>
+          <p style="color:var(--muted);">Adding venue to directory…</p>
+        </div>
+
+        <div class="button-group">
+          <button type="button" class="btn-secondary" onclick="goToDashboard()">Cancel</button>
+          <button type="submit" class="btn-primary">✓ Add Venue to Directory</button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <script src="api.js"></script>
+  <script src="add-venue.js"></script>
+</body>
+</html>
