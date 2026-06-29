@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#A07018">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="DK Agency">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <title>Create Booking — Dave Kalz Agency</title>
+  <style>
+    :root {
+      --bg:#f0ebe0; --bg2:#e8e0d0; --card:#faf8f4; --card2:#f2ede4;
+      --border:#d4c4a0; --bronze1:#C8960C; --bronze2:#A07018;
+      --bronze3:#7A5210; --bronze4:#5A3C0C; --bronze-bg:rgba(160,112,24,0.1);
+      --text:#1a1408; --muted:#6b5e48; --dim:#a09070;
+      --green:#2e7d5c; --green-bg:rgba(46,125,92,0.1);
+      --red:#8B2000; --red-bg:rgba(139,32,0,0.1);
+      --amber:#b45309; --amber-bg:rgba(180,83,9,0.1);
+      --blue:#1e4d8c; --blue-bg:rgba(30,77,140,0.1);
+      --radius:12px;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background:var(--bg);
+      min-height:100vh;
+      font-family:'Inter',-apple-system,sans-serif;
+    }
+    .container {
+      background:var(--card);
+      max-width:900px;
+      margin:0 auto;
+      padding:32px;
+      border-radius:16px;
+      border:1px solid var(--border);
+      box-shadow:0 1px 3px rgba(0,0,0,0.07),0 4px 16px rgba(0,0,0,0.06);
+    }
+    h1 { color:var(--bronze3,#7A5210); margin-bottom: 10px; font-size: 2rem; }
+    .color-bars { display: flex; gap: 4px; height: 4px; margin: 20px 0 40px 0; }
+    .bar { flex: 1; }
+    .form-group { margin-bottom: 25px; }
+    label { display:block; font-weight:600; color:var(--muted,#6b5e48); margin-bottom:7px; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.8px; }
+    label .required { color: #D32F2F; }
+    input, select, textarea {
+      width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px;
+      font-size: 1rem; font-family: Arial, sans-serif; transition: border-color 0.3s; box-sizing: border-box;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline:none; border-color:var(--bronze1); box-shadow:0 0 0 3px rgba(160,112,24,0.1);
+    }
+    textarea { resize: vertical; min-height: 100px; }
+    .section-title {
+      font-size: 1.4rem; color: #A07018; font-weight: 700;
+      margin: 40px 0 20px 0; padding-bottom: 10px; border-bottom: 3px solid #A07018;
+    }
+    .section-title:first-of-type { margin-top: 0; }
+    .row   { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+    .button-group { display: flex; gap: 15px; margin-top: 40px; }
+    button { padding: 16px 32px; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+    .btn-primary { background:#A07018; color:#fff; flex:1; font-weight:800; letter-spacing:1px; text-transform:uppercase; font-size:0.9rem; box-shadow:0 2px 8px rgba(80,50,10,0.2); }
+    .btn-primary:hover { background:#8a6014; transform:translateY(-1px); box-shadow:0 4px 12px rgba(80,50,10,0.3); }
+    .btn-secondary { background:var(--card2,#f2ede4); color:var(--muted,#6b5e48); border:1.5px solid var(--border,#d4c4a0); flex:1; }
+    .btn-secondary:hover { border-color:var(--bronze2,#A07018); color:var(--bronze2,#A07018); }
+    .success-message, .error-message, .warning-message {
+      padding: 20px; border-radius: 8px; margin-bottom: 30px; display: none; font-size: 1.1rem;
+    }
+    .success-message { background: #e8f5e9; color: #2e7d32; border-left: 5px solid #4caf50; }
+    .error-message   { background: #ffebee; color: #c62828; border-left: 5px solid #f44336; }
+    .warning-message { background: #fff3e0; color: #e65100; border-left: 5px solid #ff9800; }
+    .loading { display: none; text-align: center; padding: 40px; }
+    .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #A07018; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 0 auto 15px; }
+    @keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+    .help-text { font-size: 0.9rem; color: #666; margin-top: 6px; font-style: italic; }
+    .info-box { background:var(--bronze-bg,rgba(160,112,24,0.08)); border-left:4px solid var(--bronze2,#A07018); padding:14px; margin:20px 0; border-radius:6px; }
+    .info-box strong { color:var(--bronze3,#7A5210); }
+    .calculated-field { background: #f5f5f5; padding: 12px; border-radius: 8px; border: 2px solid #e0e0e0; font-weight: 600; color: #A07018; }
+    .input-suffix-wrap { position: relative; }
+    .input-suffix-wrap input { padding-right: 40px; }
+    .input-suffix { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: #666; font-weight: 600; pointer-events: none; }
+    .commission-summary {
+      background:var(--green-bg,rgba(46,125,92,0.08)); border:1.5px solid rgba(46,125,92,0.25); border-radius:8px;
+      padding: 16px 18px; margin-top: 16px; display: none;
+    }
+    .commission-summary-title { font-weight:700; color:var(--green,#2e7d5c); font-size: 0.9rem; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .commission-summary-row { display: flex; justify-content: space-between; font-size: 0.95rem; padding: 3px 0; }
+    .commission-summary-row.total { font-weight: 700; border-top: 1px solid #c8e6c9; margin-top: 6px; padding-top: 8px; font-size: 1.05rem; }
+
+    .checkbox-group {
+      display: flex; align-items: center; gap: 12px;
+      background: #f0f4fa; border: 1.5px solid #c5d4f8; border-radius: 10px;
+      padding: 14px 16px; margin-bottom: 25px; cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .checkbox-group:hover { background: #e8f0fb; border-color: #A07018; }
+    .checkbox-group input[type="checkbox"] {
+      width: 18px; height: 18px; accent-color: #A07018; cursor: pointer; flex-shrink: 0; margin: 0;
+    }
+    .checkbox-group label {
+      display: flex; flex-direction: column; gap: 2px; cursor: pointer; margin: 0;
+      font-weight: 600; color: #A07018;
+    }
+    .checkbox-group label span { font-size: 0.8rem; font-weight: 400; color: #64748b; }
+    .checkbox-group.disabled { opacity: 0.45; pointer-events: none; }
+
+    .contract-section { display:none; margin-top:10px; border:2px solid rgba(160,112,24,0.3); border-radius:12px; overflow:hidden; }
+    .contract-section.show { display:block; }
+    .contract-section-header { background:linear-gradient(135deg,rgba(160,112,24,0.12),rgba(200,150,12,0.06)); padding:12px 16px; border-bottom:1px solid rgba(160,112,24,0.15); display:flex; align-items:center; gap:8px; }
+    .contract-section-header span { font-size:0.82rem; font-weight:700; color:#A07018; }
+    .contract-options { display:flex; gap:10px; padding:14px 16px; background:#fdfaf5; border-bottom:1px solid rgba(160,112,24,0.1); }
+    .contract-opt { flex:1; padding:12px 14px; border-radius:10px; border:2px solid var(--border); cursor:pointer; transition:all 0.15s; background:#fff; }
+    .contract-opt:hover { border-color:#A07018; background:#fdf8f0; }
+    .contract-opt.selected { border-color:#A07018; background:linear-gradient(135deg,rgba(160,112,24,0.09),rgba(200,150,12,0.04)); }
+    .contract-opt-icon { font-size:1.4rem; margin-bottom:5px; }
+    .contract-opt-title { font-size:0.85rem; font-weight:700; color:#1a1408; margin-bottom:2px; }
+    .contract-opt-desc  { font-size:0.73rem; color:#6b5e48; line-height:1.4; }
+    .contract-edit-wrap { display:none; }
+    .contract-edit-wrap.show { display:block; }
+    .contract-edit-header { padding:10px 16px; background:#f8f5f0; border-bottom:1px solid rgba(160,112,24,0.1); display:flex; align-items:center; justify-content:space-between; }
+    .contract-edit-header span { font-size:0.75rem; font-weight:700; color:#6b5e48; text-transform:uppercase; letter-spacing:0.8px; }
+    .contract-edit-header small { font-size:0.72rem; color:#aaa; }
+    .contract-textarea { width:100%; min-height:360px; padding:16px; border:none; font-family:'Courier New',monospace; font-size:0.78rem; line-height:1.65; color:#333; background:#fafafa; resize:vertical; }
+    .contract-textarea:focus { outline:none; background:#fff; }
+    .contract-recipients { padding:11px 16px; background:#e8f5e9; border-top:1px solid #a5d6a7; font-size:0.78rem; color:#2e7d32; font-weight:600; display:flex; align-items:center; gap:6px; }
+
+    .prefill-banner {
+      display:none; background:var(--bronze-bg); border:1.5px solid rgba(160,112,24,0.3);
+      border-radius:10px; padding:12px 16px; margin-bottom:16px;
+      align-items:center; gap:12px; flex-wrap:wrap;
+    }
+    .prefill-banner.show { display:flex; }
+    .prefill-banner p { flex:1; font-size:0.84rem; color:var(--bronze3); font-weight:500; margin:0; line-height:1.5; }
+    .prefill-banner strong { color:var(--bronze2); }
+  </style>
+</head>
+<body>
+
+  <div style="background:linear-gradient(160deg,#3a2608 0%,#6a4a10 10%,#a07020 20%,#d4a030 30%,#f0c050 42%,#e8b838 50%,#c08820 60%,#906010 70%,#6a4810 82%,#4a3008 90%,#2e1e06 100%);padding:0 20px;display:flex;align-items:center;height:48px;position:sticky;top:0;z-index:100;box-shadow:0 2px 20px rgba(0,0,0,0.25);margin-bottom:24px;">
+    <img style="width:38px;height:38px;object-fit:contain;filter:invert(1) brightness(1.2);margin-right:10px;" src="icons/dka-logo.png" alt="DKA">
+    <div style="display:flex;flex-direction:column;gap:1px;">
+      <span style="font-size:0.88rem;font-weight:600;color:#f5ead0;">Dave Kalz Agency</span>
+      <span style="font-size:0.58rem;letter-spacing:2px;text-transform:uppercase;color:rgba(240,192,80,0.8);">Create Booking</span>
+    </div>
+  </div>
+
+  <div class="container">
+
+    <div class="prefill-banner" id="prefillBanner">
+      <p id="prefillBannerText"></p>
+    </div>
+
+    <div class="success-message" id="successMsg">
+      <strong>&#x2713; Booking created successfully!</strong><br>
+      <a href="#" onclick="addAnother(); return false;">Create another booking</a> or
+      <a href="#" onclick="goToDashboard(); return false;">return to dashboard</a>
+    </div>
+    <div class="error-message"   id="errorMsg"></div>
+    <div class="warning-message" id="warningMsg"></div>
+
+    <form id="createBookingForm" onsubmit="return handleSubmit(event)">
+
+      <div class="section-title">Select Venue</div>
+      <div class="form-group">
+        <label>Venue <span class="required">*</span></label>
+        <select id="venue" required onchange="updateVenueInfo()">
+          <option value="">-- Loading venues... --</option>
+        </select>
+      </div>
+      <div class="info-box" id="venueInfo" style="display:none;">
+        <strong>Venue Details:</strong><br><span id="venueDetails"></span>
+      </div>
+
+      <div class="section-title">Select Band</div>
+      <div class="form-group">
+        <label>Band <span class="required">*</span></label>
+        <select id="band" required onchange="updateBandInfo()">
+          <option value="">-- Loading bands... --</option>
+        </select>
+      </div>
+      <div class="info-box" id="bandInfo" style="display:none;">
+        <strong>Band Details:</strong><br><span id="bandDetails"></span>
+      </div>
+
+      <div class="section-title">Date &amp; Time</div>
+      <div class="row">
+        <div class="form-group">
+          <label>Date <span class="required">*</span></label>
+          <input type="date" id="bookingDate" required onchange="checkAvailability()">
+          <div class="help-text">Check venue calendar for availability</div>
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select id="status">
+            <option value="Confirmed">Confirmed</option>
+            <option value="Pending">Pending</option>
+            <option value="Tentative">Tentative</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div class="form-group">
+          <label>Start Time <span class="required">*</span></label>
+          <input type="time" id="startTime" required value="20:00">
+        </div>
+        <div class="form-group">
+          <label>End Time <span class="required">*</span></label>
+          <input type="time" id="endTime" required value="23:30">
+        </div>
+      </div>
+
+      <div class="section-title">Payment Details</div>
+      <div class="row">
+        <div class="form-group">
+          <label>Sound/Lights Provided By</label>
+          <select id="soundLights" onchange="updatePayAmount()">
+            <option value="Venue">Venue (Lower Rate)</option>
+            <option value="Band">Band (Higher Rate)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Pay Amount <span class="required">*</span></label>
+          <div class="calculated-field" id="payAmount">Select band first</div>
+          <input type="hidden" id="payAmountValue">
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="form-group">
+          <label>Commission % <span class="required">*</span></label>
+          <div class="input-suffix-wrap">
+            <input type="number" id="commissionPct" min="0" max="100" step="0.1"
+                   placeholder="e.g. 15" required oninput="updateCommissionSummary()">
+            <span class="input-suffix">%</span>
+          </div>
+          <div class="help-text">Agency commission for this booking</div>
+          <div id="commissionWarn" style="display:none;margin-top:8px;padding:10px 14px;background:#fff8e1;color:#b45309;border:1.5px solid rgba(180,83,9,0.3);border-radius:8px;font-size:0.82rem;font-weight:600;line-height:1.4;"></div>
+        </div>
+        <div class="form-group" style="display:flex;align-items:flex-end;">
+          <div style="width:100%;">
+            <div class="commission-summary" id="commissionSummary">
+              <div class="commission-summary-title">&#x1F4B0; Commission Summary</div>
+              <div class="commission-summary-row">
+                <span>Band Pay</span><span id="summaryBandPay">$0.00</span>
+              </div>
+              <div class="commission-summary-row">
+                <span>Commission Rate</span><span id="summaryRate">0%</span>
+              </div>
+              <div class="commission-summary-row total">
+                <span>Agency Earns</span><span id="summaryEarns">$0.00</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Notes</label>
+        <textarea id="notes" placeholder="Special requirements, setup notes, etc."></textarea>
+      </div>
+
+      <div class="checkbox-group" id="sendEmailGroup" onclick="toggleEmailCheckbox()">
+        <input type="checkbox" id="sendConfirmationEmail" checked onclick="event.stopPropagation(); updateEmailHint();">
+        <label for="sendConfirmationEmail">
+          Send confirmation email to band
+          <span id="emailCheckboxHint">A booking confirmation will be emailed to the band's address on file</span>
+        </label>
+      </div>
+
+      <input type="checkbox" id="sendContract" checked style="display:none;">
+
+      <div class="contract-section show" id="contractSection">
+        <div class="contract-section-header">
+          <span>&#x1F4DD;</span>
+          <span>Performance Contract</span>
+        </div>
+        <div class="contract-options">
+          <div class="contract-opt selected" id="optStandard" onclick="selectContractOpt('standard')">
+            <div class="contract-opt-icon">&#x26A1;</div>
+            <div class="contract-opt-title">Send As-Is</div>
+            <div class="contract-opt-desc">Auto-filled from booking details. Sent immediately on save.</div>
+          </div>
+          <div class="contract-opt" id="optEdit" onclick="selectContractOpt('edit')">
+            <div class="contract-opt-icon">&#x270F;&#xFE0F;</div>
+            <div class="contract-opt-title">Edit Before Sending</div>
+            <div class="contract-opt-desc">Review and customize the contract text before it is sent.</div>
+          </div>
+          <div class="contract-opt" id="optNone" onclick="selectContractOpt('none')">
+            <div class="contract-opt-icon">&#x23F3;</div>
+            <div class="contract-opt-title">Don't Send Yet</div>
+            <div class="contract-opt-desc">Save the booking without sending a contract right now.</div>
+          </div>
+        </div>
+        <div class="contract-edit-wrap" id="contractEditWrap">
+          <div class="contract-edit-header">
+            <span>&#x270D; Edit Contract</span>
+            <small>Changes apply to this booking only</small>
+          </div>
+          <textarea class="contract-textarea" id="contractTextarea" placeholder="Loading contract..."></textarea>
+        </div>
+        <div class="contract-recipients" id="contractRecipients">
+          &#x2705; Contract will be sent to the band and to you (the agent) for signatures
+        </div>
+      </div>
+
+      <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <p>Creating booking...</p>
+      </div>
+
+      <div class="button-group">
+        <button type="button" class="btn-secondary" onclick="goToDashboard()">Cancel</button>
+        <button type="submit" class="btn-primary">Create Booking</button>
+      </div>
+
+    </form>
+  </div>
+
+  <script src="api.js"></script>
+  <script src="create-booking.js"></script>
+</body>
+</html>
