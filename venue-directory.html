@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <meta name="theme-color" content="#A07018">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="DK Agency">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <title>Venue Directory — Dave Kalz Agency</title>
+  <style>
+    body{font-family:Arial,sans-serif;margin:0;padding:20px;background:#f0ebe0;min-height:100vh;}
+    .container{background:#fff;max-width:1400px;margin:0 auto;padding:0 20px 24px;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,0.2);overflow:hidden;}
+    h1{display:none;}
+    .controls{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;align-items:center;}
+    .search-box{flex:1;min-width:180px;padding:7px 12px;border:1.5px solid #e0e0e0;border-radius:7px;font-size:0.85rem;}
+    .search-box:focus{outline:none;border-color:#A07018;}
+    .filter-select{padding:7px 10px;border:1.5px solid #e0e0e0;border-radius:7px;font-size:0.82rem;background:#fff;cursor:pointer;min-width:120px;}
+    .filter-select:focus{outline:none;border-color:#A07018;}
+    .btn{padding:7px 14px;border:none;border-radius:7px;font-size:0.82rem;font-weight:600;cursor:pointer;transition:all 0.3s;}
+    .btn-green{background:#7CB342;color:white;}
+    .btn-green:hover{background:#689F38;}
+    .btn-orange{background:#F57C00;color:white;}
+    .btn-orange:hover{background:#E65100;}
+    .btn-back{background:#f5f5f5;color:#333;}
+    .btn-back:hover{background:#e0e0e0;}
+    .btn-small{padding:6px 14px;font-size:0.85rem;}
+    .btn-primary{background:#2E5C99;color:white;}
+    .stats-bar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;padding-top:16px;}
+    .stat-pill{background:#f5f7fa;padding:6px 14px;border-radius:16px;font-size:0.78rem;font-weight:600;color:#333;border:1.5px solid #e0e0e0;}
+    .stat-pill span{color:#A07018;font-size:1.2rem;}
+    .rating-a{background:#1B5E20;color:white;padding:2px 7px;border-radius:10px;font-weight:700;font-size:0.72rem;display:inline-block;}
+    .rating-b{background:#7CB342;color:white;padding:2px 7px;border-radius:10px;font-weight:700;font-size:0.72rem;display:inline-block;}
+    .rating-c{background:#A07018;color:white;padding:2px 7px;border-radius:10px;font-weight:700;font-size:0.72rem;display:inline-block;}
+    .rating-d{background:#D32F2F;color:white;padding:2px 7px;border-radius:10px;font-weight:700;font-size:0.72rem;display:inline-block;}
+    .w9-yes{background:#7CB342;color:white;padding:2px 6px;border-radius:6px;font-size:0.7rem;font-weight:600;display:inline-block;}
+    .w9-no{background:#D32F2F;color:white;padding:2px 6px;border-radius:6px;font-size:0.7rem;font-weight:600;display:inline-block;}
+    .table-wrapper{overflow-x:auto;border-radius:8px;border:1px solid #e0e0e0;-webkit-overflow-scrolling:touch;}
+    table{width:100%;border-collapse:collapse;min-width:900px;}
+    thead{background:#A07018;color:white;}
+    th{padding:9px 8px;text-align:left;font-weight:600;font-size:0.78rem;cursor:pointer;user-select:none;white-space:nowrap;}
+    th:hover{background:#8a6014;}
+    td{padding:7px 8px;border-bottom:1px solid #f0f0f0;font-size:0.78rem;vertical-align:middle;}
+    tr:hover{background:#f5f7fa;}
+    tr:last-child td{border-bottom:none;}
+    .loading{text-align:center;padding:60px;color:#666;}
+    .spinner{border:4px solid #f3f3f3;border-top:4px solid #A07018;border-radius:50%;width:50px;height:50px;animation:spin 1s linear infinite;margin:0 auto 15px;}
+    @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+    .empty-state{text-align:center;padding:60px;color:#999;}
+    .results-count{color:#666;font-size:0.95rem;margin-bottom:15px;}
+    a.link{color:#A07018;text-decoration:none;}
+    a.link:hover{text-decoration:underline;}
+    .modal-root{display:none;position:fixed;top:0;left:0;right:0;bottom:0;overflow-y:auto;z-index:1000;background:rgba(0,0,0,0.55);padding:40px 20px 60px;box-sizing:border-box;}
+    .modal-root.open{display:block;}
+    .modal-card{background:#fff;border-radius:14px;box-shadow:0 8px 40px rgba(0,0,0,0.3);width:100%;max-width:600px;margin:0 auto;padding:30px 32px 40px;position:relative;}
+    .edit-modal-card{max-width:760px;}
+    .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:15px;border-bottom:3px solid #A07018;}
+    .modal-title{font-size:1.4rem;color:#A07018;font-weight:700;}
+    .close-btn{background:none;border:none;font-size:1.5rem;cursor:pointer;color:#666;padding:5px;line-height:1;}
+    .close-btn:hover{color:#D32F2F;}
+    .detail-section{margin-bottom:20px;}
+    .detail-section-title{font-size:0.85rem;text-transform:uppercase;letter-spacing:1px;color:#999;margin-bottom:10px;font-weight:600;}
+    .detail-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f5f5f5;font-size:0.95rem;}
+    .detail-label{color:#666;font-weight:600;flex-shrink:0;margin-right:16px;}
+    .detail-value{color:#333;text-align:right;word-break:break-word;}
+    .edit-section-title{font-size:1rem;color:#A07018;font-weight:700;margin:24px 0 12px 0;padding-bottom:6px;border-bottom:2px solid #e3f2fd;}
+    .edit-section-title:first-of-type{margin-top:0;}
+    .edit-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+    .edit-row.thirds{grid-template-columns:1fr 1fr 1fr;}
+    .edit-group{margin-bottom:16px;}
+    .edit-group label{display:block;font-weight:600;color:#444;margin-bottom:5px;font-size:0.9rem;}
+    .edit-group input,.edit-group select,.edit-group textarea{width:100%;padding:10px 12px;border:2px solid #e0e0e0;border-radius:8px;font-size:0.95rem;font-family:Arial,sans-serif;box-sizing:border-box;}
+    .edit-group input:focus,.edit-group select:focus,.edit-group textarea:focus{outline:none;border-color:#A07018;}
+    .edit-group textarea{resize:vertical;min-height:80px;}
+    .edit-btn-group{display:flex;gap:12px;margin-top:24px;}
+    .edit-btn-group button{flex:1;padding:13px;border:none;border-radius:8px;font-size:1rem;font-weight:600;cursor:pointer;}
+    .edit-save{background:#A07018;color:#fff;}
+    .edit-cancel{background:#f0ebe0;color:#4a3008;border:1.5px solid #d4c4a0;}
+    .edit-success{background:#e8f5e9;color:#2e7d32;border-left:4px solid #4caf50;padding:12px 16px;border-radius:6px;margin-bottom:16px;display:none;font-weight:600;}
+    .edit-error{background:#ffebee;color:#c62828;border-left:4px solid #f44336;padding:12px 16px;border-radius:6px;margin-bottom:16px;display:none;}
+    .edit-loading{text-align:center;padding:30px;display:none;}
+    .btn-delete{background:#D32F2F;color:white;}
+    .btn-delete:hover{background:#b71c1c;}
+    .agent-only{display:block;}
+    .topbar{background:linear-gradient(160deg,#3a2608 0%,#6a4a10 10%,#a07020 20%,#d4a030 30%,#f0c050 42%,#e8b838 50%,#c08820 60%,#906010 70%,#6a4810 82%,#4a3008 90%,#2e1e06 100%);border-bottom:1px solid rgba(200,150,50,0.2);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:48px;z-index:200;box-shadow:0 2px 20px rgba(0,0,0,0.25);margin:0 -20px 0 -20px;border-radius:16px 16px 0 0;}
+    .topbar-brand{display:flex;align-items:center;gap:10px;}
+    .brand-logo{width:36px;height:36px;object-fit:contain;filter:invert(1) brightness(1.2);}
+    .brand-text{display:flex;flex-direction:column;gap:1px;}
+    .brand-name{font-size:0.85rem;font-weight:600;color:#f5ead0;letter-spacing:0.3px;}
+    .brand-sub{font-size:0.6rem;font-weight:400;letter-spacing:1.5px;text-transform:uppercase;color:rgba(240,192,80,0.7);}
+    .topbar-right{display:flex;align-items:center;gap:8px;}
+    .btn-topbar{background:rgba(0,0,0,0.2);color:rgba(245,234,208,0.85);border:1px solid rgba(200,160,60,0.25);padding:5px 14px;border-radius:6px;font-size:0.75rem;font-weight:600;font-family:inherit;letter-spacing:0.5px;cursor:pointer;transition:all 0.2s;white-space:nowrap;}
+    .btn-topbar:hover{border-color:rgba(240,192,80,0.5);color:rgba(240,192,80,1);}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="topbar">
+      <div class="topbar-brand">
+        <img class="brand-logo" src="icons/dka-logo.png" alt="DKA">
+        <div class="brand-text"><div class="brand-name">Dave Kalz Agency</div><div class="brand-sub">Venue Directory</div></div>
+      </div>
+      <div class="topbar-right"></div>
+    </div>
+    <div class="stats-bar">
+      <div class="stat-pill">Total Venues: <span id="statTotal">0</span></div>
+      <div class="stat-pill">Has Sound: <span id="statSound">0</span></div>
+      <div class="stat-pill">Has Lighting: <span id="statLighting">0</span></div>
+      <div class="stat-pill">Needs Contact (30d): <span id="statContact">0</span></div>
+    </div>
+    <div class="controls">
+      <input type="text" class="search-box" id="searchBox" placeholder="Search venues, cities, contacts..." oninput="filterVenues()">
+      <select class="filter-select" id="filterState" onchange="filterVenues()"><option value="">All States</option></select>
+      <select class="filter-select" id="filterSound" onchange="filterVenues()"><option value="">All Sound</option><option value="Yes">Has Sound</option><option value="No">No Sound</option></select>
+      <select class="filter-select" id="filterLighting" onchange="filterVenues()"><option value="">All Lighting</option><option value="Yes">Has Lighting</option><option value="No">No Lighting</option></select>
+      <select class="filter-select" id="filterExcl" onchange="filterVenues()"><option value="">All Exclusivity</option><option value="Exclusive">Exclusive</option><option value="Non-Exclusive">Non-Exclusive</option><option value="Preferred">Preferred</option></select>
+      <button class="btn btn-green" onclick="addVenue()">+ Add Venue</button>
+      <button class="btn btn-back" onclick="goToDashboard()">&#8592; Dashboard</button>
+    </div>
+    <div class="results-count" id="resultsCount"></div>
+    <div class="table-wrapper" id="tableWrapper"><div class="loading"><div class="spinner"></div><p>Loading venue directory...</p></div></div>
+  </div>
+
+  <div class="modal-root" id="viewModalRoot" onclick="handleViewBackdrop(event)">
+    <div class="modal-card">
+      <div class="modal-header"><div class="modal-title" id="modalVenueName">Venue</div><button class="close-btn" onclick="closeView()">&#x2715;</button></div>
+      <div id="modalContent"></div>
+      <div style="margin-top:20px;display:flex;gap:10px;">
+        <button class="btn btn-orange" style="flex:1;" onclick="openEditFromView()">&#x270E; Edit This Venue</button>
+        <button class="btn btn-delete" style="flex:0 0 auto;padding:10px 20px;" onclick="deleteFromView()">&#x1F5D1; Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-root" id="editModalRoot" onclick="handleEditBackdrop(event)">
+    <div class="modal-card edit-modal-card">
+      <div class="modal-header"><div class="modal-title">&#x270E; Edit Venue</div><button class="close-btn" onclick="closeEdit()">&#x2715;</button></div>
+      <div class="edit-success" id="editSuccess">&#x2713; Venue updated!</div>
+      <div class="edit-error" id="editError"></div>
+      <div class="edit-loading" id="editLoading"><div class="spinner"></div><p>Saving...</p></div>
+      <div id="editFormWrap">
+        <div class="edit-section-title">Venue Information</div>
+        <div class="edit-group"><label>Venue Name</label><input type="text" id="eVenueName"></div>
+        <div class="edit-row"><div class="edit-group"><label>Contact Name</label><input type="text" id="eContactName"></div><div class="edit-group"><label>Phone</label><input type="tel" id="ePhone"></div></div>
+        <div class="edit-group"><label>Email</label><input type="email" id="eEmail"></div>
+        <div class="edit-section-title">Location</div>
+        <div class="edit-group"><label>Address</label><input type="text" id="eAddress"></div>
+        <div class="edit-row"><div class="edit-group"><label>City</label><input type="text" id="eCity"></div><div class="edit-group"><label>State</label><input type="text" id="eState"></div></div>
+        <div class="edit-row"><div class="edit-group"><label>Zip</label><input type="text" id="eZip"></div><div class="edit-group"><label>Capacity</label><input type="number" id="eCapacity" min="0"></div></div>
+        <div class="edit-section-title">Venue Details</div>
+        <div class="edit-row"><div class="edit-group"><label>Pay Rate Budget ($)</label><input type="number" id="ePayRateBudget" min="0"></div><div class="edit-group"><label>Exclusivity</label><select id="eExclusivity"><option value="">Unknown</option><option value="Exclusive">Exclusive</option><option value="Non-Exclusive">Non-Exclusive</option><option value="Preferred">Preferred</option></select></div></div>
+        <div class="edit-row"><div class="edit-group"><label>Has Sound</label><select id="eHasSound"><option value="">Unknown</option><option value="Yes">Yes</option><option value="No">No</option></select></div><div class="edit-group"><label>Has Lighting</label><select id="eHasLighting"><option value="">Unknown</option><option value="Yes">Yes</option><option value="No">No</option></select></div></div>
+        <div class="edit-section-title">Preferences</div>
+        <div class="edit-group"><label>Preferred Genres</label><input type="text" id="ePrefGenres" placeholder="e.g. Rock, Blues"></div>
+        <div class="edit-row"><div class="edit-group"><label>Preferred Band Sizes</label><input type="text" id="ePrefBandSizes"></div><div class="edit-group"><label>Min Band Rating</label><select id="eMinBandRating"><option value="">Any</option><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option></select></div></div>
+        <div class="edit-row"><div class="edit-group"><label>Min Draw</label><input type="number" id="eMinDraw" min="0"></div><div class="edit-group"><label>Travel Preference</label><select id="eTravelPref"><option value="Any">Any</option><option value="Local">Local Only</option><option value="Regional">Regional</option></select></div></div>
+        <div class="edit-section-title">Notes</div>
+        <div class="edit-group"><textarea id="eNotes" placeholder="Additional information..."></textarea></div>
+        <div class="edit-group agent-only"><label>Last Contact Notes</label><textarea id="eContactNotes"></textarea></div>
+        <div class="edit-btn-group"><button class="edit-cancel" onclick="closeEdit()">Cancel</button><button class="edit-save" onclick="submitEdit()">Save Changes</button></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="api.js"></script>
+  <script src="venue-directory.js"></script>
+</body>
+</html>
