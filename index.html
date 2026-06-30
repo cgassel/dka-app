@@ -208,12 +208,15 @@
         if (r && r.success) {
           if (t === 'admin') {
             var url = await callApi('redirectToAdminDashboard', []);
+            // Store session info locally since we no longer have PropertiesService-backed
+            // server-side session cookies tied to this origin.
             sessionStorage.setItem('dka_role', 'admin');
             window.location.href = 'admin-dashboard.html';
           } else {
             sessionStorage.setItem('dka_role', t);
             sessionStorage.setItem('dka_id', r.agentId || r.venueId || r.bandId || '');
-            window.location.href = t + '-dashboard.html';
+            var dashboardPages = { agent: 'agent-dashboard.html', venue: 'venue-calendar.html', band: 'band-portal.html' };
+            window.location.href = dashboardPages[t] || (t + '-dashboard.html');
           }
         } else {
           restoreForm();
