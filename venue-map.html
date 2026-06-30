@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#A07018">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="DK Agency">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <title>Dave Kalz Agency — Venue Map</title>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg:#f0ebe0; --bg2:#e8e0d0; --card:#faf8f4; --card2:#f2ede4;
+      --border:#d4c4a0; --bronze1:#C8960C; --bronze2:#A07018;
+      --bronze3:#7A5210; --bronze4:#5A3C0C; --bronze-bg:rgba(160,112,24,0.1);
+      --text:#1a1408; --muted:#6b5e48; --dim:#a09070;
+      --green:#2e7d5c; --green-bg:rgba(46,125,92,0.1);
+      --red:#8B2000;   --red-bg:rgba(139,32,0,0.1);
+      --amber:#b45309; --amber-bg:rgba(180,83,9,0.1);
+      --blue:#1e4d8c;  --blue-bg:rgba(30,77,140,0.1);
+      --radius:12px; --nav-h:60px;
+    }
+    body { font-family: 'Inter', sans-serif; background: #e8e8e8; color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+    .header { background:var(--card); padding: 12px 24px; display: flex; align-items: center; gap: 20px; border-bottom: 2px solid #e0e0e0; z-index: 1000; flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .header-title { font-family: 'Inter', sans-serif; font-size: 1.3rem; font-weight: 800; letter-spacing: 1px; color: var(--bronze3); }
+    .header-controls { display: flex; gap: 10px; margin-left: auto; align-items: center; flex-wrap: wrap; }
+    .legend { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; font-family: 'Inter', sans-serif; letter-spacing: 0.5px; font-weight: 600; text-transform: uppercase; cursor: pointer; padding: 4px 10px; border-radius: 20px; border: 1px solid #d0d0d0; transition: all 0.2s; background:var(--card); }
+    .legend-item:hover { border-color: var(--bronze2); background: #f5f5f5; }
+    .legend-item.inactive { opacity: 0.35; }
+    .legend-dot { width: 12px; height: 12px; border-radius: 50%; border: 2px solid rgba(0,0,0,0.3); flex-shrink: 0; }
+    .btn { padding: 8px 16px; border: none; border-radius: 6px; font-family: 'Inter', sans-serif; font-size: 0.9rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
+    .btn-primary { background: linear-gradient(135deg, var(--bronze2), var(--bronze1)); color: white; box-shadow: 0 2px 8px rgba(160,112,24,0.3); }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(160,112,24,0.4); }
+    .btn-ghost { background:var(--card); color: var(--text); border: 1px solid #d0d0d0; }
+    .btn-ghost:hover { background: #f5f5f5; border-color: var(--bronze2); }
+    .main { display: flex; flex: 1; overflow: hidden; min-height: 0; }
+    #map { flex: 1; z-index: 1; height: 100%; min-height: 500px; }
+    .side-panel { width: 340px; background:var(--card); border-left: 2px solid #e0e0e0; display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0; transition: width 0.3s ease; box-shadow: -4px 0 12px rgba(0,0,0,0.05); }
+    .side-panel.collapsed { width: 0; }
+    .panel-header { padding: 16px 20px; border-bottom: 2px solid #f0f0f0; display: flex; align-items: center; justify-content: space-between; background: #fafafa; }
+    .panel-title { font-family: 'Inter', sans-serif; font-size: 1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text); }
+    .venue-count { font-family: 'Inter', sans-serif; font-size: 0.85rem; color: var(--bronze1); font-weight: 600; }
+    .panel-search { padding: 12px 16px; border-bottom: 1px solid #f0f0f0; background:var(--card); }
+    .panel-search input { width: 100%; background: #f5f5f5; border: 1px solid #d0d0d0; border-radius: 8px; padding: 10px 14px; color: var(--text); font-family: 'Inter', sans-serif; font-size: 0.9rem; }
+    .panel-search input::placeholder { color: #999; }
+    .panel-search input:focus { outline: none; border-color: var(--bronze1); background:var(--card); }
+    .venue-list { overflow-y: auto; flex: 1; background:var(--card); }
+    .venue-list::-webkit-scrollbar { width: 6px; }
+    .venue-list::-webkit-scrollbar-track { background: #f5f5f5; }
+    .venue-list::-webkit-scrollbar-thumb { background: #c0c0c0; border-radius: 3px; }
+    .venue-item { padding: 14px 20px; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background 0.2s; display: flex; align-items: center; gap: 12px; }
+    .venue-item:hover { background: #f8f8f8; }
+    .venue-item.active { background: #e3f2fd; border-left: 3px solid var(--bronze1); }
+    .venue-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; border: 2px solid rgba(0,0,0,0.3); }
+    .venue-item-info { flex: 1; min-width: 0; }
+    .venue-item-name { font-family: 'Inter', sans-serif; font-size: 0.95rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: 0.3px; color: var(--text); }
+    .venue-item-meta { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
+    .venue-rating-badge { font-family: 'Inter', sans-serif; font-size: 0.85rem; font-weight: 800; width: 24px; height: 24px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .venue-detail { display: none; padding: 20px; border-top: 2px solid #f0f0f0; background: #fafafa; }
+    .venue-detail.open { display: block; }
+    .detail-name { font-family: 'Inter', sans-serif; font-size: 1.3rem; font-weight: 800; letter-spacing: 0.5px; margin-bottom: 5px; color: var(--text); }
+    .detail-badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-family: 'Inter', sans-serif; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 15px; }
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+    .detail-field { background:var(--card); padding: 10px; border-radius: 8px; border: 1px solid #e0e0e0; }
+    .detail-field-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 4px; font-family: 'Inter', sans-serif; font-weight: 600; }
+    .detail-field-value { font-size: 0.9rem; font-weight: 600; font-family: 'Inter', sans-serif; color: var(--text); }
+    .detail-close { width: 100%; margin-top: 10px; }
+    .stats-footer { padding: 12px 20px; border-top: 2px solid #f0f0f0; display: flex; gap: 16px; flex-wrap: wrap; background: #fafafa; }
+    .stat-item { text-align: center; }
+    .stat-value { font-family: 'Inter', sans-serif; font-size: 1.3rem; font-weight: 800; color: var(--bronze1); line-height: 1; }
+    .stat-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); font-family: 'Inter', sans-serif; }
+    .loading-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background:var(--card); display: flex; align-items: center; justify-content: center; z-index: 999; flex-direction: column; gap: 15px; }
+    .loading-overlay.hidden { display: none; }
+    .spinner { border: 3px solid #e0e0e0; border-top: 3px solid var(--bronze1); border-radius: 50%; width: 40px; height: 40px; animation: spin 0.8s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .loading-text { font-family: 'Inter', sans-serif; font-size: 1rem; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+    .leaflet-popup-content-wrapper { background: white !important; color: var(--text) !important; border: 2px solid #e0e0e0 !important; border-radius: 10px !important; box-shadow: 0 10px 40px rgba(0,0,0,0.15) !important; font-family: 'Inter', sans-serif !important; }
+    .leaflet-popup-tip { background: white !important; }
+    .popup-name { font-family: 'Inter', sans-serif; font-size: 1.1rem; font-weight: 800; margin-bottom: 8px; letter-spacing: 0.3px; color: var(--text); }
+    .popup-row { font-size: 0.85rem; color: var(--muted); margin-bottom: 4px; display: flex; gap: 8px; }
+    .popup-row strong { color: var(--text); min-width: 70px; }
+    .popup-badge { display: inline-block; padding: 2px 8px; border-radius: 8px; font-size: 0.78rem; font-weight: 700; font-family: 'Inter', sans-serif; letter-spacing: 0.3px; margin-top: 6px; }
+    .no-venues { padding: 40px 20px; text-align: center; color: var(--muted); font-family: 'Inter', sans-serif; font-size: 1rem; letter-spacing: 1px; }
+    .contact-reminder { font-size: 0.72rem; font-weight: 700; color: #E65100; background: #FFF3E0; border: 1px solid #FFCC80; border-radius: 10px; padding: 1px 7px; margin-left: 6px; white-space: nowrap; }
+    .contact-reminder.overdue { color: #B71C1C; background: #FFEBEE; border-color: #EF9A9A; }
+    .detail-flyer-section { margin-top: 14px; padding-top: 14px; border-top: 1.5px solid #eee; }
+    .btn-flyer { width: 100%; padding: 10px 16px; border: none; border-radius: 8px; background:var(--bronze2); color: white; font-weight: 700; font-size: 0.9rem; cursor: pointer; margin-bottom: 8px; transition: opacity 0.15s; }
+    .btn-flyer:hover { opacity: 0.88; }
+    .btn-flyer:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-log-contact { width: 100%; padding: 8px 16px; border: 1.5px solid #ddd; border-radius: 8px; background:var(--card); color: #555; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: background 0.15s; }
+    .btn-log-contact:hover { background: #f5f5f5; }
+    .flyer-status { font-size: 0.82rem; text-align: center; margin-top: 6px; min-height: 18px; color: #2e7d32; }
+    .flyer-status.error { color: #c62828; }
+    .last-contact-note { font-size: 0.8rem; color: #888; margin-top: 6px; text-align: center; }
+    .vm-edit-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.55); z-index: 2000; align-items: center; justify-content: center; }
+    .vm-edit-overlay.open { display: flex; }
+    .vm-edit-modal { background:var(--card); border-radius: 14px; width: 94%; max-width: 560px; max-height: 92vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.35); }
+    .vm-edit-hdr { background:var(--bronze2); padding: 18px 24px; border-radius: 14px 14px 0 0; display: flex; align-items: center; justify-content: space-between; }
+    .vm-edit-hdr h2 { color: white; font-size: 1.1rem; margin: 0; font-weight: 700; }
+    .vm-edit-hdr button { background: rgba(255,255,255,0.2); border: none; color: white; font-size: 1.1rem; cursor: pointer; border-radius: 6px; padding: 4px 10px; }
+    .vm-edit-body { padding: 22px 24px; }
+    .vm-edit-section { font-size: 0.75rem; font-weight: 700; color: #A07018; text-transform: uppercase; letter-spacing: 1px; margin: 18px 0 10px; border-bottom: 1.5px solid #e8f0fe; padding-bottom: 4px; }
+    .vm-edit-section:first-child { margin-top: 0; }
+    .vm-ef { margin-bottom: 12px; }
+    .vm-ef label { display: block; font-size: 0.8rem; font-weight: 600; color: #555; margin-bottom: 4px; }
+    .vm-ef input, .vm-ef select, .vm-ef textarea { width: 100%; padding: 8px 11px; border: 1.5px solid #ddd; border-radius: 8px; font-size: 0.9rem; color: #333; box-sizing: border-box; }
+    .vm-ef input:focus, .vm-ef select:focus, .vm-ef textarea:focus { outline: none; border-color: #A07018; }
+    .vm-ef textarea { min-height: 60px; resize: vertical; }
+    .vm-edit-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .vm-edit-row3 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; }
+    .vm-edit-footer { display: flex; gap: 10px; padding: 14px 24px; border-top: 1px solid #eee; justify-content: flex-end; }
+    .vm-edit-error { display: none; background: #ffebee; color: #c62828; padding: 10px 14px; border-radius: 8px; font-size: 0.88rem; margin-top: 8px; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="header-title">Dave Kalz Agency — Venue Map</div>
+
+    <div class="header-controls">
+      <div class="legend">
+        <div class="legend-item" onclick="toggleFilter('exclusive')" id="leg-exclusive">
+          <div class="legend-dot" style="background: #2E7D32;"></div>
+          Exclusive
+        </div>
+        <div class="legend-item" onclick="toggleFilter('shared')" id="leg-shared">
+          <div class="legend-dot" style="background: #F9A825;"></div>
+          Shared
+        </div>
+        <div class="legend-item" onclick="toggleFilter('competitor')" id="leg-competitor">
+          <div class="legend-dot" style="background: #D32F2F;"></div>
+          Competitor
+        </div>
+        <div class="legend-item" onclick="toggleFilter('noagency')" id="leg-noagency">
+          <div class="legend-dot" style="background: #1565C0;"></div>
+          No Agency
+        </div>
+      </div>
+
+      <button class="btn btn-ghost" onclick="fitAllMarkers()">⊕ Fit All</button>
+      <button class="btn btn-primary" onclick="goToDashboard()">← Dashboard</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div style="position:relative; flex:1;">
+      <div id="map"></div>
+      <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <div class="loading-text">Loading venues...</div>
+      </div>
+    </div>
+
+    <div class="side-panel" id="sidePanel">
+      <div class="panel-header">
+        <div class="panel-title">Venues</div>
+        <div class="venue-count" id="venueCount">Loading...</div>
+      </div>
+
+      <div class="panel-search">
+        <input type="text" id="panelSearch" placeholder="Search venues..." oninput="filterList()">
+      </div>
+
+      <div class="venue-list" id="venueList">
+        <div class="no-venues">Loading venues...</div>
+      </div>
+
+      <div class="venue-detail" id="venueDetail">
+        <div class="detail-name" id="detailName"></div>
+        <div id="detailBadge"></div>
+        <div class="detail-grid">
+          <div class="detail-field">
+            <div class="detail-field-label">City</div>
+            <div class="detail-field-value" id="detailCity"></div>
+          </div>
+          <div class="detail-field">
+            <div class="detail-field-label">Capacity</div>
+            <div class="detail-field-value" id="detailCapacity"></div>
+          </div>
+          <div class="detail-field">
+            <div class="detail-field-label">Budget</div>
+            <div class="detail-field-value" id="detailBudget"></div>
+          </div>
+          <div class="detail-field">
+            <div class="detail-field-label">Rating</div>
+            <div class="detail-field-value" id="detailRating"></div>
+          </div>
+          <div class="detail-field">
+            <div class="detail-field-label">Sound</div>
+            <div class="detail-field-value" id="detailSound"></div>
+          </div>
+          <div class="detail-field">
+            <div class="detail-field-label">Lighting</div>
+            <div class="detail-field-value" id="detailLighting"></div>
+          </div>
+        </div>
+        <div class="detail-field" style="margin-bottom:10px;">
+          <div class="detail-field-label">Contact</div>
+          <div class="detail-field-value" id="detailContact"></div>
+        </div>
+        <div class="detail-field">
+          <div class="detail-field-label">Phone</div>
+          <div class="detail-field-value" id="detailPhone"></div>
+        </div>
+        <div class="detail-flyer-section" id="detailFlyerSection" style="display:none;">
+          <button class="btn-flyer" id="btnSendFlyer" onclick="sendFlyer()">
+            &#x2709; Send Dave Kalz Agency Flyer
+          </button>
+          <button class="btn-log-contact" onclick="logContactOnly()">
+            &#x2713; Mark as Contacted (No Email)
+          </button>
+          <div class="flyer-status" id="flyerStatus"></div>
+          <div class="last-contact-note" id="lastContactNote"></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:14px;">
+          <button class="btn btn-ghost" style="flex:1;padding:9px;" onclick="openVenueEdit()">&#x270E; Edit Venue</button>
+          <button class="btn btn-ghost detail-close" style="flex:1;padding:9px;" onclick="closeDetail()">Close</button>
+        </div>
+      </div>
+
+      <div class="vm-edit-overlay" id="vmEditOverlay" onclick="closeVenueEdit()">
+        <div class="vm-edit-modal" onclick="event.stopPropagation()">
+          <div class="vm-edit-hdr">
+            <h2 id="vmEditTitle">Edit Venue</h2>
+            <button onclick="closeVenueEdit()">&#x2715;</button>
+          </div>
+          <div class="vm-edit-body">
+            <input type="hidden" id="vmEditId">
+
+            <div class="vm-edit-section">Basic Info</div>
+            <div class="vm-ef">
+              <label>Venue Name</label>
+              <input type="text" id="vmEditName" placeholder="Venue name">
+            </div>
+            <div class="vm-edit-row">
+              <div class="vm-ef">
+                <label>Contact Name</label>
+                <input type="text" id="vmEditContact" placeholder="Contact person">
+              </div>
+              <div class="vm-ef">
+                <label>Phone</label>
+                <input type="tel" id="vmEditPhone" placeholder="Phone number">
+              </div>
+            </div>
+            <div class="vm-ef">
+              <label>Email</label>
+              <input type="email" id="vmEditEmail" placeholder="Email address">
+            </div>
+
+            <div class="vm-edit-section">Location</div>
+            <div class="vm-ef">
+              <label>Address</label>
+              <input type="text" id="vmEditAddress" placeholder="Street address">
+            </div>
+            <div class="vm-edit-row3">
+              <div class="vm-ef">
+                <label>City</label>
+                <input type="text" id="vmEditCity" placeholder="City">
+              </div>
+              <div class="vm-ef">
+                <label>State</label>
+                <input type="text" id="vmEditState" placeholder="ST" maxlength="2">
+              </div>
+              <div class="vm-ef">
+                <label>Zip</label>
+                <input type="text" id="vmEditZip" placeholder="Zip">
+              </div>
+            </div>
+
+            <div class="vm-edit-section">Venue Details</div>
+            <div class="vm-edit-row">
+              <div class="vm-ef">
+                <label>Capacity</label>
+                <input type="number" id="vmEditCapacity" placeholder="Capacity" min="0">
+              </div>
+              <div class="vm-ef">
+                <label>Pay Rate / Budget ($)</label>
+                <input type="number" id="vmEditBudget" placeholder="0" min="0">
+              </div>
+            </div>
+            <div class="vm-edit-row">
+              <div class="vm-ef">
+                <label>Has Sound System</label>
+                <select id="vmEditSound">
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                </select>
+              </div>
+              <div class="vm-ef">
+                <label>Has Lighting</label>
+                <select id="vmEditLighting">
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                </select>
+              </div>
+            </div>
+            <div class="vm-ef">
+              <label>Exclusivity / Relationship</label>
+              <select id="vmEditExclusivity">
+                <option value="Exclusive - DK Only">Exclusive - DK Only</option>
+                <option value="Shared - Books with others">Shared - Books with others</option>
+                <option value="Competitor - Uses other agency">Competitor - Uses other agency</option>
+                <option value="No Agency - Books direct">No Agency - Books direct</option>
+                <option value="Unknown">Unknown</option>
+              </select>
+            </div>
+
+            <div class="vm-edit-section">Preferences</div>
+            <div class="vm-edit-row">
+              <div class="vm-ef">
+                <label>Preferred Genres</label>
+                <input type="text" id="vmEditGenres" placeholder="e.g. Country, Rock">
+              </div>
+              <div class="vm-ef">
+                <label>Preferred Band Sizes</label>
+                <input type="text" id="vmEditBandSizes" placeholder="e.g. Duo, Trio">
+              </div>
+            </div>
+
+            <div class="vm-edit-section">Notes</div>
+            <div class="vm-ef">
+              <label>Contact Notes</label>
+              <textarea id="vmEditContactNotes" placeholder="Last contact notes..."></textarea>
+            </div>
+            <div class="vm-ef">
+              <label>General Notes</label>
+              <textarea id="vmEditNotes" placeholder="General notes about this venue..."></textarea>
+            </div>
+
+            <div class="vm-edit-error" id="vmEditError"></div>
+          </div>
+          <div class="vm-edit-footer">
+            <button class="btn btn-ghost" onclick="closeVenueEdit()">Cancel</button>
+            <button class="btn" style="background:linear-gradient(160deg,#3a2608 0%,#6a4a10 10%,#a07020 20%,#d4a030 30%,#f0c050 42%,#e8b838 50%,#c08820 60%,#906010 70%,#6a4810 82%,#4a3008 90%,#2e1e06 100%);color:#111008;padding:10px 24px;" id="vmEditSaveBtn" onclick="saveVenueEdit()">Save Changes</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-footer">
+        <div class="stat-item">
+          <div class="stat-value" id="footerTotal">0</div>
+          <div class="stat-label">Total</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value" style="color: #4CAF50;" id="footerExclusive">0</div>
+          <div class="stat-label">Exclusive</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value" style="color: #F9A825;" id="footerShared">0</div>
+          <div class="stat-label">Shared</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value" style="color: #ef5350;" id="footerCompetitor">0</div>
+          <div class="stat-label">Competitor</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value" style="color: #42A5F5;" id="footerNoAgency">0</div>
+          <div class="stat-label">No Agency</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="api.js"></script>
+  <script src="venue-map.js"></script>
+</body>
+</html>
