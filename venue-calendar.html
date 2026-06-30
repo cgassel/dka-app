@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#2a1f0a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="DK Agency">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <title>Dave Kalz Agency — Venue Calendar</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+    :root {
+      --bg:#f0ebe0; --bg2:#e8e0d0; --card:#faf8f4; --card2:#f2ede4;
+      --border:#d4c4a0; --bronze1:#C8960C; --bronze2:#A07018;
+      --bronze3:#7A5210; --bronze4:#5A3C0C; --bronze-bg:rgba(160,112,24,0.1);
+      --text:#1a1408; --muted:#6b5e48; --dim:#a09070;
+      --green:#2e7d5c; --green-bg:rgba(46,125,92,0.1);
+      --red:#8B2000;   --red-bg:rgba(139,32,0,0.1);
+      --amber:#b45309; --amber-bg:rgba(180,83,9,0.1);
+      --blue:#1e4d8c;  --blue-bg:rgba(30,77,140,0.1);
+      --radius:12px; --nav-h:48px;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Inter',sans-serif; background:var(--bg); color:#333; height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+
+    .btn { padding:8px 16px; border:none; border-radius:7px; font-family:'Inter',sans-serif; font-size:0.9rem; font-weight:700; letter-spacing:1px; text-transform:uppercase; cursor:pointer; transition:all 0.18s; white-space:nowrap; }
+    .btn-primary { background:linear-gradient(160deg,#3a2608 0%,#6a4a10 10%,#a07020 20%,#d4a030 30%,#f0c050 42%,#e8b838 50%,#c08820 60%,#906010 70%,#6a4810 82%,#4a3008 90%,#2e1e06 100%); color:#111008; }
+    .btn-primary:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(46,92,153,0.3); }
+    .btn:disabled { opacity:0.5; cursor:not-allowed; transform:none !important; }
+
+    .match-banner { display:none; background:linear-gradient(135deg,#1b5e20,#2e7d32); color:white; padding:12px 24px; flex-shrink:0; align-items:center; gap:14px; }
+    .match-banner.visible { display:flex; animation:slideDown 0.4s ease; }
+    @keyframes slideDown { from{transform:translateY(-100%);opacity:0} to{transform:translateY(0);opacity:1} }
+    .banner-icon { font-size:1.5rem; flex-shrink:0; }
+    .banner-text { flex:1; font-size:0.92rem; line-height:1.4; }
+    .banner-text strong { font-size:1rem; display:block; margin-bottom:2px; }
+    .banner-btns { display:flex; gap:8px; flex-shrink:0; }
+    .banner-btn-go { background:var(--card); color:#1b5e20; border:none; padding:7px 16px; border-radius:6px; font-family:'Inter',sans-serif; font-weight:800; font-size:0.88rem; letter-spacing:1px; text-transform:uppercase; cursor:pointer; }
+    .banner-btn-go:hover { background:#e8f5e9; }
+    .banner-btn-dismiss { background:rgba(255,255,255,0.2); color:white; border:1px solid rgba(255,255,255,0.4); padding:7px 12px; border-radius:6px; font-family:'Inter',sans-serif; font-weight:700; font-size:0.85rem; cursor:pointer; }
+    .banner-btn-dismiss:hover { background:rgba(255,255,255,0.3); }
+
+    .no-sched-banner { display:none; background:#fff8e1; border-bottom:2px solid #ffe082; padding:12px 24px; flex-shrink:0; align-items:center; gap:14px; }
+    .no-sched-banner.visible { display:flex; }
+    .no-sched-banner p { font-size:0.9rem; color:#e65100; flex:1; }
+    .no-sched-banner p strong { font-size:0.95rem; display:block; margin-bottom:2px; color:#bf360c; }
+
+    .tab-bar { display:flex; background:var(--card); border-bottom:2px solid var(--border); flex-shrink:0; overflow-x:auto; }
+    .tab { padding:13px 20px; font-family:'Inter',sans-serif; font-weight:700; font-size:0.95rem; letter-spacing:1px; text-transform:uppercase; cursor:pointer; border-bottom:3px solid transparent; color:#888; transition:all 0.18s; white-space:nowrap; }
+    .tab:hover { color:var(--bronze2); background:var(--card2); }
+    .tab.active { color:var(--bronze2); border-bottom-color:var(--bronze2); background:var(--bg); }
+    .tab .badge { background:var(--green); color:white; font-size:0.7rem; padding:1px 6px; border-radius:8px; margin-left:5px; font-family:'Inter',sans-serif; font-weight:700; }
+
+    .main { flex:1; overflow:hidden; }
+    .tab-pane { display:none; height:100%; padding:20px; overflow-y:auto; flex-direction:column; gap:18px; }
+    .tab-pane.active { display:flex; }
+
+    .stats-row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+    .stat-card { background:var(--card); padding:6px 14px; border-radius:20px; border:1px solid var(--border); display:flex; align-items:center; gap:7px; white-space:nowrap; }
+    .stat-val { font-family:'JetBrains Mono',monospace; font-size:0.95rem; font-weight:700; color:var(--bronze3); }
+    .stat-lbl { font-size:0.72rem; color:var(--muted); font-weight:500; }
+
+    .cal-controls { background:var(--card); padding:8px 14px; border-radius:8px; border:1px solid var(--border); display:flex; align-items:center; gap:10px; flex-wrap:nowrap; }
+    .month-nav { display:flex; align-items:center; gap:8px; }
+    .month-nav button:not(.btn-today) { width:26px; height:26px; border-radius:50%; border:1.5px solid var(--bronze2); background:var(--card2); color:var(--bronze2); font-size:0.85rem; cursor:pointer; transition:all 0.15s; flex-shrink:0; }
+    .month-nav button:not(.btn-today):hover { background:var(--bronze2); color:white; }
+    .month-lbl { font-family:'Inter',sans-serif; font-size:0.95rem; font-weight:700; color:var(--bronze3); min-width:140px; text-align:center; }
+    .cal-legend { margin-left:auto; display:flex; gap:10px; align-items:center; font-size:0.7rem; color:var(--muted); flex-wrap:nowrap; }
+    .leg-box { display:inline-block; width:10px; height:10px; border-radius:2px; vertical-align:middle; margin-right:3px; flex-shrink:0; }
+
+    .cal-wrap { background:var(--card); border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08); overflow-x:auto; padding:16px; }
+    .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; min-width:820px; }
+    .cal-hdr  { padding:12px; text-align:center; font-family:'Inter',sans-serif; font-weight:700; font-size:0.85rem; text-transform:uppercase; background:var(--bronze2); color:white; }
+    .cal-day  { min-height:105px; padding:7px; border:1px solid #eeeeee; background:var(--card); }
+    .cal-day.other  { background:#fafafa; color:#ccc; }
+    .cal-day.today  { background:#e3f2fd; border:2px solid #2196f3; }
+    .cal-day.sched-day { border-left:4px solid #7b1fa2; background:#fdf6ff; }
+    .day-num  { font-family:'Inter',sans-serif; font-weight:700; font-size:1rem; margin-bottom:3px; }
+    .sched-label { display:inline-block; background:#ede7f6; color:#4a148c; font-size:0.6rem; font-weight:800; padding:1px 5px; border-radius:4px; margin-bottom:3px; text-transform:uppercase; letter-spacing:0.4px; }
+    .sched-time  { display:block; font-size:0.6rem; color:#6a1b9a; font-weight:600; margin-bottom:2px; }
+    .bk-chip { color:white; padding:3px 6px; margin:2px 0; border-radius:4px; font-size:0.72rem; font-weight:600; cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block; transition:filter 0.15s; }
+    .bk-chip:hover { filter:brightness(0.88); }
+    .bk-chip.confirmed { background:var(--green); }
+    .bk-chip.pending   { background:var(--bronze1); }
+    .bk-chip.tentative { background:#9E9E9E; }
+    .bk-chip.cancelled { background:var(--red); text-decoration:line-through; }
+
+    .gcal-wrap { max-width:640px; display:flex; flex-direction:column; gap:18px; }
+    .gcal-card { background:var(--card); border-radius:14px; box-shadow:0 2px 12px rgba(0,0,0,0.08); overflow:hidden; }
+    .gcal-hdr  { padding:20px 24px; color:white; }
+    .gcal-hdr h3 { font-family:'Inter',sans-serif; font-size:1.3rem; font-weight:800; text-transform:uppercase; letter-spacing:1px; margin-bottom:3px; }
+    .gcal-hdr p  { font-size:0.86rem; opacity:0.9; }
+    .gcal-body   { padding:20px 24px; }
+    .gcal-status { display:flex; align-items:center; gap:14px; padding:14px 16px; border-radius:10px; margin-bottom:16px; }
+    .gcal-status.ok  { background:#e8f5e9; border:1.5px solid #a5d6a7; }
+    .gcal-status.off { background:#fff8e1; border:1.5px solid #ffe082; }
+    .gcal-icon { font-size:1.7rem; flex-shrink:0; }
+    .gcal-text { flex:1; }
+    .gcal-text strong { display:block; font-size:0.92rem; color:#333; margin-bottom:2px; }
+    .gcal-text span   { font-size:0.8rem; color:#777; }
+    .btn-gcal-connect { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; padding:13px 20px; border:none; border-radius:10px; cursor:pointer; background:linear-gradient(160deg,#3a2608 0%,#6a4a10 10%,#a07020 20%,#d4a030 30%,#f0c050 42%,#e8b838 50%,#c08820 60%,#906010 70%,#6a4810 82%,#4a3008 90%,#2e1e06 100%); color:#111008; font-family:'Inter',sans-serif; font-size:1rem; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; transition:all 0.2s; }
+    .btn-gcal-connect:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(46,92,153,0.35); }
+    .btn-gcal-connect:disabled { opacity:0.6; cursor:not-allowed; transform:none; }
+    .btn-gcal-disconnect { background:none; border:none; color:var(--red); font-size:0.8rem; font-weight:700; cursor:pointer; text-decoration:underline; flex-shrink:0; }
+    .btn-gcal-disconnect:hover { color:#b71c1c; }
+    .gcal-steps { display:flex; flex-direction:column; gap:12px; }
+    .gcal-step  { display:flex; gap:12px; align-items:flex-start; }
+    .gcal-step-n { width:24px; height:24px; border-radius:50%; background:var(--bronze2); color:white; font-family:'Inter',sans-serif; font-weight:800; font-size:0.85rem; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:2px; }
+    .gcal-step p { font-size:0.86rem; color:#555; line-height:1.55; margin-top:1px; }
+    .gcal-step p strong { color:#333; }
+    .gcal-refresh-note { background:var(--bronze-bg); border-radius:8px; padding:12px 16px; font-size:0.85rem; color:var(--bronze2); margin-top:8px; }
+
+    .sugg-intro { background:var(--card); border-radius:12px; padding:18px 22px; box-shadow:0 2px 8px rgba(0,0,0,0.08); }
+    .sugg-intro h3 { font-family:'Inter',sans-serif; font-size:1.15rem; font-weight:800; color:var(--bronze2); text-transform:uppercase; letter-spacing:1px; margin-bottom:6px; }
+    .sugg-intro p  { font-size:0.87rem; color:#666; line-height:1.5; }
+    .sched-pills { display:flex; flex-wrap:wrap; gap:7px; margin-top:10px; }
+    .sched-pill { background:#ede7f6; color:#4a148c; border:1.5px solid #ce93d8; padding:4px 12px; border-radius:10px; font-size:0.82rem; font-weight:700; }
+    .src-pill { padding:4px 12px; border-radius:10px; font-size:0.8rem; font-weight:700; }
+    .src-pill.gcal { background:#e8f5e9; color:#2e7d32; border:1.5px solid #a5d6a7; }
+    .src-pill.sched{ background:#ede7f6; color:#4a148c; border:1.5px solid #ce93d8; }
+
+    .no-sched-card { background:var(--card); border-radius:12px; padding:32px; box-shadow:0 2px 8px rgba(0,0,0,0.08); text-align:center; }
+    .no-sched-card .icon { font-size:3rem; margin-bottom:14px; }
+    .no-sched-card h3 { font-family:'Inter',sans-serif; font-size:1.3rem; font-weight:800; color:var(--bronze2); margin-bottom:8px; }
+    .no-sched-card p  { font-size:0.9rem; color:#666; line-height:1.6; margin-bottom:18px; }
+
+    .spinner { border:3px solid #f0f0f0; border-top:2px solid var(--bronze1); border-radius:50%; width:32px; height:32px; animation:spin 0.9s linear infinite; margin:0 auto 10px; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .loading-block { text-align:center; padding:40px; color:#999; }
+    .empty-block { text-align:center; padding:40px; }
+    .empty-block h3 { font-family:'Inter',sans-serif; font-size:1.2rem; color:#bbb; margin-bottom:8px; }
+    .empty-block p  { font-size:0.87rem; color:#ccc; line-height:1.5; }
+
+    .sugg-grid { display:flex; flex-direction:column; gap:12px; }
+    .s-card { background:var(--card); border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.07); border-left:5px solid var(--bronze2); padding:18px 20px; display:flex; gap:14px; align-items:flex-start; transition:box-shadow 0.2s; }
+    .s-card:hover { box-shadow:0 4px 16px rgba(0,0,0,0.12); }
+    .s-card.top-match { border-left-color:var(--green); }
+    .s-rank { font-family:'Inter',sans-serif; font-size:1.6rem; font-weight:800; color:#ddd; min-width:28px; text-align:center; line-height:1; padding-top:2px; }
+    .s-rank.gold   { color:var(--bronze1); }
+    .s-rank.silver { color:#9E9E9E; }
+    .s-rank.bronze { color:#CD7F32; }
+    .s-body { flex:1; min-width:0; }
+    .s-name { font-family:'Inter',sans-serif; font-size:1.2rem; font-weight:800; color:var(--bronze2); margin-bottom:6px; }
+    .s-pills { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+    .s-pill  { background:var(--bg); color:var(--bronze2); border:1px solid #c5d4f8; padding:2px 9px; border-radius:9px; font-size:0.76rem; font-weight:700; }
+    .s-pill.g { background:#e8f5e9; color:#2e7d32; border-color:#a5d6a7; }
+    .s-pill.y { background:#fff8e1; color:#e65100; border-color:#ffe082; }
+    .chips-lbl { font-size:0.72rem; font-weight:700; color:#aaa; text-transform:uppercase; letter-spacing:0.4px; margin-bottom:4px; }
+    .chips     { display:flex; flex-wrap:wrap; gap:4px; margin-bottom:8px; }
+    .chip-ok   { background:#e8f5e9; color:#2e7d32; border:1px solid #a5d6a7; padding:2px 8px; border-radius:9px; font-size:0.73rem; font-weight:700; }
+    .chip-no   { background:#fff8e1; color:#e65100; border:1px solid #ffe082; padding:2px 8px; border-radius:9px; font-size:0.73rem; font-weight:700; }
+    .chip-date { background:#e3f2fd; color:var(--blue); border:1px solid #90CAF9; padding:2px 8px; border-radius:9px; font-size:0.73rem; font-weight:700; }
+    .more-lbl  { font-size:0.73rem; color:#aaa; font-style:italic; }
+    .s-links   { display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; }
+    .slink { padding:3px 9px; border-radius:6px; font-size:0.76rem; font-weight:700; text-decoration:none; font-family:'Inter',sans-serif; }
+    .slink.yt  { background:#ff000015; color:#cc0000; border:1px solid #ffb3b3; }
+    .slink.fb  { background:#1877f215; color:#1877f2; border:1px solid #90caf9; }
+    .slink.ig  { background:#e91e6315; color:#c2185b; border:1px solid #f48fb1; }
+    .slink.web { background:#00838f15; color:#00838f; border:1px solid #80cbc4; }
+    .s-score { display:flex; flex-direction:column; align-items:center; min-width:50px; }
+    .sc-num  { font-family:'Inter',sans-serif; font-size:2rem; font-weight:800; color:var(--bronze2); line-height:1; }
+    .sc-den  { font-size:0.72rem; color:#bbb; }
+    .sc-lbl  { font-size:0.65rem; font-weight:700; color:#bbb; text-transform:uppercase; letter-spacing:0.4px; margin-top:2px; }
+
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center; }
+    .modal-overlay.open { display:flex; }
+    .modal { background:var(--card); border-radius:12px; padding:26px; max-width:480px; width:90%; max-height:80vh; overflow-y:auto; box-shadow:0 10px 40px rgba(0,0,0,0.3); }
+    .modal-hdr { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:12px; border-bottom:3px solid var(--bronze2); }
+    .modal-hdr h3 { font-family:'Inter',sans-serif; font-size:1.35rem; font-weight:800; color:var(--bronze2); }
+    .close-btn { background:none; border:none; font-size:1.4rem; cursor:pointer; color:#999; }
+    .close-btn:hover { color:var(--red); }
+    .d-row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #f4f4f4; gap:14px; }
+    .d-lbl { font-weight:600; color:#777; font-size:0.88rem; }
+    .d-val { color:#333; text-align:right; font-size:0.88rem; }
+    .sbadge { display:inline-block; padding:2px 9px; border-radius:9px; font-size:0.8rem; font-weight:700; text-transform:uppercase; }
+    .s-confirmed { background:#c8e6c9; color:#2e7d32; }
+    .s-pending   { background:#fff3e0; color:#e65100; }
+    .s-tentative { background:#e0e0e0; color:#616161; }
+    .s-cancelled { background:#ffcdd2; color:#c62828; }
+
+    .toast { position:fixed; bottom:24px; right:24px; padding:12px 20px; border-radius:10px; font-size:0.9rem; font-weight:600; z-index:9999; opacity:0; transform:translateY(12px); transition:all 0.3s; pointer-events:none; box-shadow:0 4px 16px rgba(0,0,0,0.2); }
+    .toast.show { opacity:1; transform:translateY(0); }
+    .toast.success { background:#e8f5e9; color:#2e7d32; border-left:4px solid #4caf50; }
+    .toast.error   { background:#ffebee; color:var(--red); border-left:4px solid #f44336; }
+    .toast.info    { background:#e3f2fd; color:var(--blue); border-left:4px solid #2196f3; }
+
+    .ep-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.52); z-index:1100; overflow-y:auto; padding:28px 16px 60px; }
+    .ep-bg.open { display:block; }
+    .ep-modal { background:var(--card); border-radius:16px; max-width:720px; margin:0 auto; padding:28px 32px 36px; box-shadow:0 12px 48px rgba(0,0,0,0.28); }
+    .ep-hdr { display:flex; justify-content:space-between; align-items:center; margin-bottom:22px; padding-bottom:12px; border-bottom:3px solid var(--bronze2); }
+    .ep-hdr h2 { font-family:'Inter',sans-serif; font-size:1.45rem; font-weight:800; color:var(--bronze2); }
+    .ep-notice { background:var(--bronze-bg); border-radius:8px; padding:10px 14px; font-size:0.84rem; color:#1a3a6b; margin-bottom:18px; }
+    .ep-section { font-family:'Inter',sans-serif; font-size:0.74rem; font-weight:700; text-transform:uppercase; letter-spacing:1.2px; color:var(--bronze2); background:var(--bronze-bg); padding:6px 12px; border-radius:6px; margin:20px 0 14px; }
+    .ep-row  { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .ep-row3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+    .ep-grp  { margin-bottom:14px; }
+    .ep-grp label { display:block; font-weight:600; color:#444; margin-bottom:5px; font-size:0.86rem; }
+    .ep-grp label .req { color:var(--red); }
+    .ep-grp input, .ep-grp select, .ep-grp textarea {
+      width:100%; padding:9px 12px; border:2px solid var(--border); border-radius:8px;
+      font-size:0.9rem; font-family:'Inter',sans-serif; transition:border-color 0.16s;
+    }
+    .ep-grp input:focus, .ep-grp select:focus, .ep-grp textarea:focus {
+      outline:none; border-color:var(--bronze1); box-shadow:0 0 0 3px rgba(160,112,24,0.08);
+    }
+    .ep-grp textarea { resize:vertical; min-height:68px; }
+    .ep-help { font-size:0.77rem; color:#888; margin-top:3px; font-style:italic; }
+    .tag-picker { border:2px solid var(--border); border-radius:10px; padding:10px 12px; background:#f7f9fc; transition:border-color 0.16s; }
+    .tag-picker:focus-within { border-color:var(--bronze1); }
+    .tag-grid { display:flex; flex-wrap:wrap; gap:6px; }
+    .tag-opt { display:none; }
+    .tag-lbl { display:inline-flex; align-items:center; gap:4px; padding:4px 12px; border-radius:18px; border:2px solid var(--border); background:var(--card); font-size:0.79rem; font-weight:600; color:#777; cursor:pointer; transition:all 0.13s; }
+    .tag-lbl:hover { border-color:var(--bronze1); color:var(--bronze2); }
+    .tag-opt:checked + .tag-lbl { background:var(--bronze2); border-color:var(--bronze1); color:white; }
+    #pg_rock:checked+.tag-lbl    { background:#c62828; border-color:#c62828; }
+    #pg_blues:checked+.tag-lbl   { background:#283593; border-color:#283593; }
+    #pg_jazz:checked+.tag-lbl    { background:#4a148c; border-color:#4a148c; }
+    #pg_country:checked+.tag-lbl { background:#e65100; border-color:#e65100; }
+    #pg_rb:checked+.tag-lbl      { background:#880e4f; border-color:#880e4f; }
+    #pg_folk:checked+.tag-lbl    { background:#33691e; border-color:#33691e; }
+    #pg_alt:checked+.tag-lbl     { background:#006064; border-color:#006064; }
+    #pg_classic:checked+.tag-lbl { background:#37474f; border-color:#37474f; }
+    #pg_funk:checked+.tag-lbl    { background:#f9a825; border-color:#f9a825; color:#1a202c; }
+    #pg_pop:checked+.tag-lbl     { background:#ad1457; border-color:#ad1457; }
+    #pg_cover:checked+.tag-lbl   { background:#00695c; border-color:#00695c; }
+    #pg_other:checked+.tag-lbl   { background:#455a64; border-color:#455a64; }
+    .ep-footer { display:flex; gap:12px; margin-top:24px; padding-top:20px; border-top:1px solid var(--border); }
+    .ep-footer button { flex:1; padding:12px; border:none; border-radius:8px; font-family:'Inter',sans-serif; font-size:1rem; font-weight:700; letter-spacing:1px; text-transform:uppercase; cursor:pointer; transition:all 0.18s; }
+    .ep-save   { background:linear-gradient(160deg,#3a2608 0%,#6a4a10 10%,#a07020 20%,#d4a030 30%,#f0c050 42%,#e8b838 50%,#c08820 60%,#906010 70%,#6a4810 82%,#4a3008 90%,#2e1e06 100%); color:#111008; }
+    .ep-save:hover { transform:translateY(-1px); box-shadow:0 4px 14px rgba(46,92,153,0.3); }
+    .ep-save:disabled { opacity:0.55; cursor:not-allowed; transform:none; box-shadow:none; }
+    .ep-cancel { background:var(--bg); color:#666; border:2px solid #d0d0d0 !important; }
+    .ep-cancel:hover { background:#e8e8e8; }
+    .ep-errmsg { background:#ffebee; color:var(--red); border-left:4px solid var(--red); padding:9px 13px; border-radius:7px; font-size:0.86rem; margin-bottom:12px; display:none; }
+
+    .gcal-evt-chip {
+      display: block; background: #7B1FA2; color: white;
+      padding: 2px 5px; margin: 2px 0; border-radius: 3px;
+      font-size: 0.65rem; font-weight: 600;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      border-left: 3px solid #CE93D8; cursor: default;
+    }
+    .gcal-evt-chip.all-day { background: #6A1B9A; }
+
+    .topbar {
+      background:linear-gradient(160deg,#3a2608 0%,#6a4a10 10%,#a07020 20%,#d4a030 30%,#f0c050 42%,#e8b838 50%,#c08820 60%,#906010 70%,#6a4810 82%,#4a3008 90%,#2e1e06 100%);
+      border-bottom:1px solid rgba(200,150,50,0.2);
+      padding:0 20px; display:flex; align-items:center; justify-content:space-between;
+      height:46px; position:sticky; top:0; z-index:100;
+      box-shadow:0 2px 20px rgba(0,0,0,0.25);
+    }
+    .topbar-brand { display:flex; align-items:center; gap:10px; position:relative; z-index:1; }
+    .brand-logo { width:46px; height:46px; object-fit:contain; flex-shrink:0; filter:invert(1) brightness(1.2); }
+    .brand-text { display:flex; flex-direction:column; gap:1px; }
+    .brand-name { font-size:0.92rem; font-weight:600; color:#f5ead0; letter-spacing:0.3px; }
+    .brand-sub  { font-size:0.62rem; font-weight:400; letter-spacing:1.5px; text-transform:uppercase; color:rgba(240,192,80,0.7); }
+    .topbar-right { display:flex; align-items:center; gap:8px; position:relative; z-index:1; margin-left:auto; flex-wrap:wrap; justify-content:flex-end; }
+
+    .sub-nav {
+      background:var(--card2);
+      border-bottom:1px solid var(--border);
+      padding:4px 16px;
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      gap:6px;
+      flex-shrink:0;
+      flex-wrap:wrap;
+    }
+    .btn-subnav {
+      background:#A07018;
+      color:#fff;
+      border:none; border-radius:7px;
+      font-size:0.72rem; font-weight:700;
+      font-family:'Inter',sans-serif;
+      letter-spacing:1px; text-transform:uppercase;
+      cursor:pointer; padding:5px 12px;
+      transition:all 0.2s; white-space:nowrap;
+      box-shadow:0 2px 6px rgba(80,50,10,0.2);
+    }
+    .btn-subnav:hover {
+      background:#8a6014;
+      transform:translateY(-1px);
+      box-shadow:0 4px 12px rgba(80,50,10,0.3);
+    }
+    .btn-subnav:active { transform:translateY(0); }
+
+    .btn-today {
+      background:var(--card2); color:var(--bronze3);
+      border:1.5px solid var(--bronze2); padding:4px 12px; border-radius:6px;
+      width:auto !important; height:auto !important;
+      font-size:0.7rem; font-weight:700; font-family:'Inter',sans-serif;
+      letter-spacing:0.5px; cursor:pointer; transition:all 0.18s; white-space:nowrap;
+      flex-shrink:0;
+    }
+    .btn-today:hover { background:var(--bronze2); color:#fff; }
+
+    .no-prefs-banner {
+      display:none; align-items:center; gap:14px;
+      background:linear-gradient(135deg,rgba(180,83,9,0.08),rgba(200,150,12,0.06));
+      border:1.5px solid rgba(180,83,9,0.25);
+      border-radius:10px; padding:14px 18px; margin-bottom:10px;
+      flex-wrap:wrap;
+    }
+    .no-prefs-banner.visible { display:flex; }
+    .no-prefs-banner p { flex:1; font-size:0.84rem; color:var(--text); line-height:1.5; min-width:200px; }
+    .no-prefs-banner p strong { display:block; color:var(--amber); margin-bottom:3px; font-size:0.88rem; }
+    .no-prefs-banner .btn-subnav { flex-shrink:0; }
+
+    .s-footer { display:flex; align-items:center; gap:8px; margin-top:10px; padding-top:10px; border-top:1px solid var(--border); flex-wrap:wrap; }
+    .s-date-pick { padding:5px 10px; border:1.5px solid var(--border); border-radius:6px; font-size:0.8rem; font-family:'Inter',sans-serif; color:var(--text); background:#fff; flex:1; min-width:160px; appearance:none; -webkit-appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%236b5e48' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; padding-right:28px; cursor:pointer; }
+    .s-date-pick:focus { outline:none; border-color:var(--bronze1); }
+    .btn-request {
+      background:#A07018; color:#fff;
+      border:none; border-radius:7px; padding:6px 14px;
+      font-size:0.72rem; font-weight:800; font-family:'Inter',sans-serif;
+      letter-spacing:1px; text-transform:uppercase; cursor:pointer;
+      transition:all 0.2s; white-space:nowrap;
+      box-shadow:0 2px 6px rgba(80,50,10,0.2);
+    }
+    .btn-request:hover:not(:disabled) { background:#8a6014; transform:translateY(-1px); }
+    .btn-request:disabled { opacity:0.4; cursor:not-allowed; }
+    .btn-requested {
+      background:var(--green-bg); color:var(--green);
+      border:1.5px solid rgba(46,125,92,0.3); border-radius:7px; padding:6px 14px;
+      font-size:0.72rem; font-weight:700; font-family:'Inter',sans-serif;
+      cursor:default; white-space:nowrap;
+    }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+    <div class="topbar-brand">
+      <img class="brand-logo" src="icons/dka-logo.png" alt="DKA">
+      <div class="brand-text">
+        <div class="brand-name">Dave Kalz Agency</div>
+        <div class="brand-sub" id="hdrVenue"></div>
+      </div>
+    </div>
+    <div class="topbar-right" id="topbarRight"></div>
+  </div>
+  <div class="sub-nav">
+    <button class="btn-subnav" onclick="goToSchedule()">&#127925; My Schedule</button>
+    <button class="btn-subnav" onclick="openEditPrefs()">&#9998; My Preferences</button>
+    <button class="btn-subnav" onclick="findBands()">&#128269; Find Bands</button>
+    <button class="btn-subnav" onclick="doLogout()">Sign Out</button>
+  </div>
+
+<div class="no-sched-banner" id="noSchedBanner">
+  <div style="font-size:1.6rem;">&#128197;</div>
+  <p>
+    <strong>No Music Schedule Set</strong>
+    You haven't set up your weekly music schedule yet. Set your live music days and times so the app can suggest available bands automatically.
+  </p>
+  <button class="btn-topbar" onclick="goToSchedule()" style="flex-shrink:0;">Set Up Schedule</button>
+</div>
+
+  <div class="no-prefs-banner" id="noPrefsBanner">
+    <div style="font-size:1.6rem;">&#127928;</div>
+    <p>
+      <strong>Band Preferences Not Set</strong>
+      You haven't set your band preferences yet — genres, band sizes, and budget. Click <strong>"My Preferences"</strong> in the bar above to set them up so we can suggest the best bands for your venue.
+    </p>
+    <button class="btn-subnav" onclick="openEditPrefs()" style="flex-shrink:0;">Set Preferences</button>
+  </div>
+
+<div class="match-banner" id="matchBanner">
+  <div class="banner-icon">&#127775;</div>
+  <div class="banner-text">
+    <strong id="bannerTitle">Band matches found!</strong>
+    <span id="bannerBody">Bands are available on your scheduled music days and match your preferences.</span>
+  </div>
+  <div class="banner-btns">
+    <button class="banner-btn-go" onclick="switchTab('suggestions')">See Suggestions</button>
+    <button class="banner-btn-dismiss" onclick="dismissBanner()">Dismiss</button>
+  </div>
+</div>
+
+<div class="tab-bar">
+  <div class="tab active" id="tab-calendar"    onclick="switchTab('calendar')">&#128197; Bookings Calendar</div>
+  <div class="tab"        id="tab-gcal"        onclick="switchTab('gcal')">&#128279; Google Calendar</div>
+  <div class="tab"        id="tab-suggestions" onclick="switchTab('suggestions')">&#10024; Band Suggestions<span class="badge" id="suggBadge" style="display:none;"></span></div>
+</div>
+
+<div class="main">
+
+  <div class="tab-pane active" id="pane-calendar">
+
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-val" id="stTotal">0</div><div class="stat-lbl">Total Bookings</div></div>
+      <div class="stat-card"><div class="stat-val" style="color:var(--green)" id="stConfirmed">0</div><div class="stat-lbl">Confirmed</div></div>
+      <div class="stat-card"><div class="stat-val" style="color:var(--bronze1)" id="stPending">0</div><div class="stat-lbl">Pending</div></div>
+      <div class="stat-card"><div class="stat-val" id="stThisMonth">0</div><div class="stat-lbl">This Month</div></div>
+      <div class="stat-card"><div class="stat-val" style="color:#7b1fa2" id="stSchedDays">—</div><div class="stat-lbl">Schedule Days</div></div>
+    </div>
+
+    <div class="cal-controls">
+      <div class="month-nav">
+        <button onclick="prevMonth()">&#8249;</button>
+        <div class="month-lbl" id="calMonthLbl">Loading…</div>
+        <button onclick="nextMonth()">&#8250;</button>
+      </div>
+      <button class="btn-today" onclick="gotoToday()">Today</button>
+      <div class="cal-legend">
+        <span style="display:flex;align-items:center;gap:3px;"><span class="leg-box" style="background:#e9d5f5;border:1.5px solid #9c27b0;"></span>Schedule</span>
+        <span style="display:flex;align-items:center;gap:3px;"><span class="leg-box" style="background:var(--green);"></span>Confirmed</span>
+        <span style="display:flex;align-items:center;gap:3px;"><span class="leg-box" style="background:var(--bronze1);"></span>Pending</span>
+      </div>
+    </div>
+
+    <div class="cal-wrap" id="calWrap">
+      <div class="loading-block"><div class="spinner"></div><p>Loading…</p></div>
+    </div>
+
+  </div>
+
+  <div class="tab-pane" id="pane-gcal">
+    <div class="gcal-wrap">
+
+      <div class="gcal-card">
+        <div class="gcal-hdr" style="background:linear-gradient(160deg,#3a2608 0%,#6a4a10 10%,#a07020 20%,#d4a030 30%,#f0c050 42%,#e8b838 50%,#c08820 60%,#906010 70%,#6a4810 82%,#4a3008 90%,#2e1e06 100%); color:#111008;">
+          <h3>&#128279; Google Calendar</h3>
+          <p>Connect to cross-check your schedule days against your real calendar before suggesting bands.</p>
+        </div>
+        <div class="gcal-body">
+
+          <div id="gcalLoading" style="text-align:center;padding:18px;color:#999;">
+            <div class="spinner" style="width:26px;height:26px;border-width:3px;margin-bottom:8px;"></div>Checking connection…
+          </div>
+
+          <div class="gcal-status ok" id="gcalConnected" style="display:none;">
+            <div class="gcal-icon">&#x2705;</div>
+            <div class="gcal-text">
+              <strong>Google Calendar Connected</strong>
+              <span id="gcalEmail">Your schedule days are cross-checked automatically.</span>
+            </div>
+            <button class="btn-gcal-disconnect" onclick="disconnectGcal()">Disconnect</button>
+          </div>
+
+          <div class="gcal-status off" id="gcalDisconnected" style="display:none;">
+            <div class="gcal-icon">&#x26A0;&#xFE0F;</div>
+            <div class="gcal-text">
+              <strong>Not Connected</strong>
+              <span>Connect to verify schedule days against your Google Calendar before band matching.</span>
+            </div>
+          </div>
+
+          <button class="btn-gcal-connect" id="gcalConnectBtn" style="display:none;margin-bottom:12px;" onclick="connectGcal()">
+            <svg width="20" height="20" viewBox="0 0 48 48">
+              <path fill="#EA4335" d="M24 9.5c3.1 0 5.8 1.1 8 2.9l6-6C34.5 3.1 29.6 1 24 1 14.8 1 7 6.6 3.7 14.4l7 5.4C12.4 13.7 17.7 9.5 24 9.5z"/>
+              <path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.4c-.5 2.8-2.1 5.1-4.4 6.7l7 5.4c4-3.8 6.4-9.4 6.4-16.1z"/>
+              <path fill="#FBBC05" d="M10.7 28.6A14.7 14.7 0 0 1 9.5 24c0-1.6.3-3.2.8-4.6l-7-5.4A23.8 23.8 0 0 0 .2 24c0 3.8.9 7.4 2.5 10.6l8-6z"/>
+              <path fill="#34A853" d="M24 47c5.4 0 10-1.8 13.4-4.8l-7-5.4c-1.8 1.2-4.1 2-6.4 2-6.3 0-11.6-4.2-13.5-10l-8 6.2C6.8 41.3 14.8 47 24 47z"/>
+            </svg>
+            Connect with Google
+          </button>
+
+          <div class="gcal-refresh-note" id="gcalRefreshNote" style="display:none;">
+            &#127775; Google Calendar is connected — band suggestions are filtered against your real calendar. <a href="#" onclick="switchTab('suggestions');return false;" style="color:var(--bronze2);font-weight:700;">View Suggestions</a>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="gcal-card">
+        <div class="gcal-hdr" style="background:linear-gradient(135deg,#455a64,#37474f);">
+          <h3>&#127775; How It Works</h3>
+        </div>
+        <div class="gcal-body">
+          <div class="gcal-steps">
+            <div class="gcal-step"><div class="gcal-step-n">1</div><p>Set your weekly music schedule in <strong>My Schedule</strong> — the days of the week and times you book live music.</p></div>
+            <div class="gcal-step"><div class="gcal-step-n">2</div><p>The app generates all upcoming occurrences of those days over the next 90 days as candidate dates.</p></div>
+            <div class="gcal-step"><div class="gcal-step-n">3</div><p>If you connect Google Calendar here, those candidate dates are cross-checked against your real calendar — only truly-free dates are used for matching.</p></div>
+            <div class="gcal-step"><div class="gcal-step-n">4</div><p>Band Suggestions shows every band that is available on those dates AND meets at least 2 of your venue's preferences.</p></div>
+            <div class="gcal-step"><div class="gcal-step-n">5</div><p>When an agent creates a booking, a gig event is added to your Google Calendar automatically.</p></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="tab-pane" id="pane-suggestions">
+
+    <div class="sugg-intro" id="suggIntro">
+      <h3>&#10024; Band Suggestions</h3>
+      <p>Based on your <strong>Music Schedule</strong>, these bands are available on your upcoming scheduled days and match at least 2 of your venue's preferences. Bands already booked on those dates are excluded.</p>
+      <div class="sched-pills" id="schedDaysPills"></div>
+    </div>
+
+    <div id="suggPanel">
+      <div class="loading-block"><div class="spinner"></div><p>Finding matches…</p></div>
+    </div>
+
+  </div>
+
+</div><!-- /main -->
+
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-hdr">
+      <h3 id="modalTitle">Booking Details</h3>
+      <button class="close-btn" onclick="closeModal()">&#x2715;</button>
+    </div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="ep-bg" id="epModal" onclick="closeEditIfBg(event)">
+  <div class="ep-modal" onclick="event.stopPropagation()">
+    <div class="ep-hdr">
+      <h2>&#9998; Edit My Preferences</h2>
+      <button class="close-btn" onclick="closeEditPrefs()">&#x2715;</button>
+    </div>
+    <div class="ep-notice">&#128274; Only your band-matching preferences, pay budget, and contact details can be edited here. Venue name, address, capacity, and exclusivity are managed by your booking agent.</div>
+    <div class="ep-errmsg" id="epErr"></div>
+
+    <div class="ep-section">&#128222; Contact</div>
+    <div class="ep-row">
+      <div class="ep-grp"><label>Contact Name</label><input type="text" id="ep_contact"></div>
+      <div class="ep-grp"><label>Email</label><input type="email" id="ep_email"></div>
+    </div>
+    <div class="ep-row">
+      <div class="ep-grp"><label>Phone</label><input type="tel" id="ep_phone"></div>
+      <div class="ep-grp"><label>Pay Rate Budget / Show ($) <span class="req">*</span></label><input type="number" id="ep_budget" min="0" step="25"></div>
+    </div>
+
+    <div class="ep-section">&#127897; Equipment</div>
+    <div class="ep-row">
+      <div class="ep-grp"><label>Has Sound System?</label>
+        <select id="ep_sound">
+          <option value="">-- Select --</option>
+          <option value="Yes">Yes — full PA</option>
+          <option value="Partial">Partial — basic system</option>
+          <option value="No">No — band must bring</option>
+        </select>
+      </div>
+      <div class="ep-grp"><label>Has Stage Lighting?</label>
+        <select id="ep_lighting">
+          <option value="">-- Select --</option>
+          <option value="Yes">Yes — full rig</option>
+          <option value="Partial">Partial — basic lights</option>
+          <option value="No">No — band must bring</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="ep-section">&#127925; Band Matching Preferences <span style="font-weight:400;text-transform:none;font-size:0.77rem;color:#666;">(drives suggestions)</span></div>
+
+    <div class="ep-grp">
+      <label>Preferred Genres <span class="req">*</span></label>
+      <div class="tag-picker">
+        <div class="tag-grid">
+          <input class="tag-opt" type="checkbox" id="pg_rock"    value="Rock"         name="pg"><label class="tag-lbl" for="pg_rock">&#127928; Rock</label>
+          <input class="tag-opt" type="checkbox" id="pg_blues"   value="Blues"        name="pg"><label class="tag-lbl" for="pg_blues">&#127929; Blues</label>
+          <input class="tag-opt" type="checkbox" id="pg_jazz"    value="Jazz"         name="pg"><label class="tag-lbl" for="pg_jazz">&#127927; Jazz</label>
+          <input class="tag-opt" type="checkbox" id="pg_country" value="Country"      name="pg"><label class="tag-lbl" for="pg_country">&#129312; Country</label>
+          <input class="tag-opt" type="checkbox" id="pg_rb"      value="R&amp;B/Soul" name="pg"><label class="tag-lbl" for="pg_rb">&#127908; R&amp;B/Soul</label>
+          <input class="tag-opt" type="checkbox" id="pg_folk"    value="Folk"         name="pg"><label class="tag-lbl" for="pg_folk">&#127931; Folk</label>
+          <input class="tag-opt" type="checkbox" id="pg_alt"     value="Alternative"  name="pg"><label class="tag-lbl" for="pg_alt">&#9889; Alternative</label>
+          <input class="tag-opt" type="checkbox" id="pg_classic" value="Classic Rock" name="pg"><label class="tag-lbl" for="pg_classic">&#127930; Classic Rock</label>
+          <input class="tag-opt" type="checkbox" id="pg_funk"    value="Funk"         name="pg"><label class="tag-lbl" for="pg_funk">&#128378; Funk</label>
+          <input class="tag-opt" type="checkbox" id="pg_pop"     value="Pop"          name="pg"><label class="tag-lbl" for="pg_pop">&#127925; Pop</label>
+          <input class="tag-opt" type="checkbox" id="pg_cover"   value="Cover Band"   name="pg"><label class="tag-lbl" for="pg_cover">&#127917; Cover Band</label>
+          <input class="tag-opt" type="checkbox" id="pg_other"   value="Other"        name="pg"><label class="tag-lbl" for="pg_other">&#127900; Other</label>
+        </div>
+      </div>
+      <div class="ep-help">Bands matching these genres rank highest in suggestions</div>
+    </div>
+
+    <div class="ep-row">
+      <div class="ep-grp">
+        <label>Preferred Band Sizes</label>
+        <div class="tag-picker">
+          <div class="tag-grid">
+            <input class="tag-opt" type="checkbox" id="psz1" value="1"  name="psz"><label class="tag-lbl" for="psz1">&#127908; Solo</label>
+            <input class="tag-opt" type="checkbox" id="psz2" value="2"  name="psz"><label class="tag-lbl" for="psz2">&#128101; Duo</label>
+            <input class="tag-opt" type="checkbox" id="psz3" value="3"  name="psz"><label class="tag-lbl" for="psz3">&#127925; Trio</label>
+            <input class="tag-opt" type="checkbox" id="psz4" value="4"  name="psz"><label class="tag-lbl" for="psz4">&#127928; 4-Piece</label>
+            <input class="tag-opt" type="checkbox" id="psz5" value="5"  name="psz"><label class="tag-lbl" for="psz5">&#127926; 5-Piece</label>
+            <input class="tag-opt" type="checkbox" id="psz6" value="6+" name="psz"><label class="tag-lbl" for="psz6">&#127930; 6+ Large</label>
+          </div>
+        </div>
+        <div class="ep-help">Leave blank to allow any size</div>
+      </div>
+      <div class="ep-grp">
+        <label>Minimum Band Rating</label>
+        <select id="ep_minRating">
+          <option value="">Any Rating</option>
+          <option value="D">D or above (25+ draw)</option>
+          <option value="C">C or above (40+ draw)</option>
+          <option value="B">B or above (75+ draw)</option>
+          <option value="A">A only (150+ draw)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="ep-row">
+      <div class="ep-grp">
+        <label>Minimum Band Draw</label>
+        <input type="number" id="ep_minDraw" min="0" step="5" placeholder="0 = any">
+        <div class="ep-help">Min typical crowd the band draws</div>
+      </div>
+      <div class="ep-grp">
+        <label>Band Travel Preference</label>
+        <select id="ep_travel">
+          <option value="Any">Any</option>
+          <option value="Local Only">Local Only (&lt;50 miles)</option>
+          <option value="Regional">Regional (&lt;200 miles)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="ep-grp">
+      <label>Additional Preference Notes</label>
+      <textarea id="ep_prefNotes" placeholder="e.g. No heavy metal. Bands must have their own PA. No more than 45 min setup time."></textarea>
+    </div>
+
+    <div class="ep-footer">
+      <button class="ep-cancel" onclick="closeEditPrefs()">Cancel</button>
+      <button class="ep-save" id="epSaveBtn" onclick="saveEditPrefs()">&#10003; Save Preferences</button>
+    </div>
+  </div>
+</div>
+
+<script src="api.js"></script>
+<script src="venue-calendar.js"></script>
+</body>
+</html>
