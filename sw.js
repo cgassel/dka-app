@@ -3,23 +3,35 @@
 // Caches static assets (HTML/CSS/JS/icons) so the app shell loads offline.
 // API calls to Apps Script are NOT cached — those always need a live network
 // connection since they read/write live booking data.
-//
-// NOTE: skipWaiting/clients.claim were removed — these can cause repeated
-// reload loops when a service worker updates while a tab is open. The
-// service worker now activates normally on next load instead.
 // ============================================================================
 
-const CACHE_NAME = 'dka-app-v2';
+const CACHE_NAME = 'dka-app-v3';
 const STATIC_ASSETS = [
   './index.html',
-  './agent-dashboard.html',
-  './agent-dashboard.js',
   './api.js',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/dka-logo.png',
-  './icons/apple-touch-icon.png'
+  './icons/apple-touch-icon.png',
+  // Agent pages
+  './agent-dashboard.html',   './agent-dashboard.js',
+  './band-directory.html',    './band-directory.js',
+  './venue-directory.html',   './venue-directory.js',
+  './add-band.html',          './add-band.js',
+  './add-venue.html',         './add-venue.js',
+  './venue-map.html',         './venue-map.js',
+  './booking-calendar.html',  './booking-calendar.js',
+  './create-booking.html',    './create-booking.js',
+  './my-bookings.html',       './my-bookings.js',
+  './contracts.html',         './contracts.js',
+  './band-stats.html',        './band-stats.js',
+  // Venue pages
+  './venue-calendar.html',        './venue-calendar.js',
+  './venue-schedule.html',        './venue-schedule.js',
+  './venue-booking-request.html', './venue-booking-request.js',
+  // Band pages
+  './band-portal.html',       './band-portal.js',
 ];
 
 self.addEventListener('install', function(event) {
