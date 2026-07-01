@@ -32,6 +32,8 @@ const STATIC_ASSETS = [
   './venue-booking-request.html', './venue-booking-request.js',
   // Band pages
   './band-portal.html',       './band-portal.js',
+  // Admin pages
+  './admin-dashboard.html',   './admin-dashboard.js',
 ];
 
 self.addEventListener('install', function(event) {
