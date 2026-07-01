@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#2a1f0a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="DK Agency">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <title>Dave Kalz Agency — Booking Calendar</title>
+  <style>
+    :root {
+      --bg:#f0ebe0; --bg2:#e8e0d0; --card:#faf8f4; --card2:#f2ede4;
+      --border:#d4c4a0; --bronze1:#C8960C; --bronze2:#A07018;
+      --bronze3:#7A5210; --bronze4:#5A3C0C; --bronze-bg:rgba(160,112,24,0.1);
+      --text:#1a1408; --muted:#6b5e48; --dim:#a09070;
+      --green:#2e7d5c; --green-bg:rgba(46,125,92,0.1);
+      --red:#8B2000; --red-bg:rgba(139,32,0,0.1);
+      --amber:#b45309; --amber-bg:rgba(180,83,9,0.1);
+      --blue:#1e4d8c; --blue-bg:rgba(30,77,140,0.1);
+      --radius:10px;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Inter',-apple-system,sans-serif; background:var(--bg); color:var(--text); height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+    .topbar { background:linear-gradient(160deg,#3a2608 0%,#6a4a10 10%,#a07020 20%,#d4a030 30%,#f0c050 42%,#e8b838 50%,#c08820 60%,#906010 70%,#6a4810 82%,#4a3008 90%,#2e1e06 100%); padding:0 16px; display:flex; align-items:center; height:46px; flex-shrink:0; position:relative; box-shadow:0 2px 20px rgba(0,0,0,0.25); }
+    .topbar::before { content:''; position:absolute; inset:0; pointer-events:none; background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,0.06) 50%,transparent 70%); }
+    .topbar-brand { display:flex; align-items:center; gap:10px; position:relative; z-index:1; }
+    .brand-logo { width:46px; height:46px; object-fit:contain; flex-shrink:0; filter:invert(1) brightness(1.2); }
+    .brand-name { font-size:0.88rem; font-weight:600; color:#f5ead0; }
+    .sub-nav { background:var(--card2); border-bottom:1px solid var(--border); padding:4px 16px; display:flex; align-items:center; justify-content:flex-end; gap:6px; flex-shrink:0; flex-wrap:wrap; }
+    .btn-subnav { background:#A07018; color:#fff; border:none; border-radius:7px; font-size:0.72rem; font-weight:700; font-family:'Inter',sans-serif; letter-spacing:1px; text-transform:uppercase; cursor:pointer; padding:5px 12px; transition:all 0.2s; white-space:nowrap; box-shadow:0 2px 6px rgba(80,50,10,0.2); }
+    .btn-subnav:hover { background:#8a6014; transform:translateY(-1px); }
+    .main { flex:1; overflow:hidden; display:flex; flex-direction:column; padding:10px 14px; gap:8px; }
+    .stats-bar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; flex-shrink:0; }
+    .stat-card { background:var(--card); padding:5px 13px; border-radius:20px; border:1px solid var(--border); display:flex; align-items:center; gap:6px; white-space:nowrap; }
+    .stat-value { font-family:'JetBrains Mono',monospace; font-size:0.92rem; font-weight:700; color:var(--bronze3); }
+    .stat-label { font-size:0.7rem; color:var(--muted); font-weight:500; }
+    .calendar-controls { display:flex; align-items:center; gap:8px; flex-shrink:0; flex-wrap:wrap; }
+    .month-nav { display:flex; align-items:center; gap:6px; }
+    .month-nav button:not(.btn-today) { width:26px; height:26px; border-radius:50%; border:1.5px solid var(--bronze2); background:var(--card2); color:var(--bronze2); font-size:0.9rem; cursor:pointer; transition:all 0.15s; flex-shrink:0; }
+    .month-nav button:not(.btn-today):hover { background:var(--bronze2); color:#f5ead0; }
+    .current-month { font-size:0.92rem; font-weight:700; color:var(--bronze3); min-width:130px; text-align:center; }
+    .btn-today { background:var(--card2)!important; color:var(--bronze3)!important; border:1.5px solid var(--bronze2)!important; padding:4px 10px!important; border-radius:6px!important; font-size:0.7rem!important; font-weight:700!important; font-family:'Inter',sans-serif!important; cursor:pointer; transition:all 0.18s; white-space:nowrap; width:auto!important; height:auto!important; }
+    .btn-today:hover { background:var(--bronze2)!important; color:#f5ead0!important; }
+    .filter-group { display:flex; align-items:center; gap:6px; margin-left:auto; flex-wrap:wrap; }
+    .filter-group label { font-size:0.72rem; font-weight:600; color:var(--muted); margin:0; }
+    .filter-group select { padding:4px 26px 4px 8px; border:1.5px solid var(--border); border-radius:6px; font-size:0.78rem; font-family:'Inter',sans-serif; color:var(--text); background:#fff; cursor:pointer; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%236b5e48' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 7px center; }
+    .calendar-wrap { flex:1; overflow:auto; }
+    .calendar { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; min-width:700px; }
+    .calendar-header { background:#A07018; color:#fff; padding:7px 4px; text-align:center; font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; }
+    .calendar-day { background:var(--card); min-height:90px; padding:5px; border:1px solid var(--border); cursor:pointer; transition:background 0.12s; position:relative; }
+    .calendar-day:hover { background:var(--card2); }
+    .calendar-day.today { background:#e8f5ee; border:2px solid var(--green); }
+    .calendar-day.other-month { background:var(--bg2); }
+    .calendar-day.other-month .day-number { color:var(--dim); }
+    .day-number { font-family:'JetBrains Mono',monospace; font-size:0.78rem; font-weight:600; color:var(--muted); margin-bottom:3px; }
+    .today .day-number { color:var(--green); font-weight:800; }
+    .booking-item { display:flex; justify-content:space-between; align-items:center; padding:2px 5px; margin:1px 0; border-radius:4px; font-size:0.67rem; font-weight:600; cursor:pointer; }
+    .booking-item.confirmed { background:var(--green); color:#fff; }
+    .booking-item.pending   { background:var(--bronze1); color:#fff; }
+    .booking-item.tentative { background:var(--blue); color:#fff; }
+    .booking-item.cancelled { background:var(--red); color:#fff; text-decoration:line-through; opacity:0.7; }
+    .booking-item.completed { background:var(--muted); color:#fff; }
+    .booking-actions { display:flex; gap:2px; flex-shrink:0; }
+    .booking-action-btn { background:rgba(255,255,255,0.25); border:none; color:#fff; width:16px; height:16px; border-radius:2px; font-size:0.6rem; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; }
+    .booking-action-btn:hover { background:rgba(255,255,255,0.45); }
+    .more-bookings { font-size:0.63rem; color:var(--muted); font-style:italic; margin-top:2px; }
+    .cal-legend { display:flex; gap:10px; align-items:center; margin-left:12px; }
+    .leg-item { display:flex; align-items:center; gap:4px; font-size:0.68rem; color:var(--muted); }
+    .leg-dot { width:10px; height:10px; border-radius:2px; flex-shrink:0; }
+    .modal-overlay, .edit-modal-overlay, .confirm-overlay { display:none; position:fixed; inset:0; background:rgba(20,14,4,0.6); backdrop-filter:blur(4px); z-index:500; align-items:center; justify-content:center; padding:20px; }
+    .modal-overlay.open, .edit-modal-overlay.open, .confirm-overlay.open { display:flex; }
+    .modal-box, .edit-modal-box { background:var(--card); border-radius:14px; width:100%; max-width:520px; max-height:88vh; overflow-y:auto; box-shadow:0 0 0 1px rgba(200,150,50,0.2),0 8px 40px rgba(0,0,0,0.4); }
+    .edit-modal-box { max-width:580px; }
+    .modal-header, .edit-modal-header { background:linear-gradient(160deg,#3a2608 0%,#6a4a10 10%,#a07020 20%,#d4a030 30%,#f0c050 42%,#e8b838 50%,#c08820 60%,#906010 70%,#6a4810 82%,#4a3008 90%,#2e1e06 100%); padding:15px 20px; display:flex; align-items:center; justify-content:space-between; border-radius:14px 14px 0 0; position:sticky; top:0; z-index:1; }
+    .modal-header h3, .edit-modal-header h3 { font-size:0.95rem; font-weight:700; color:#f5ead0; }
+    .modal-close { background:rgba(0,0,0,0.2); border:1px solid rgba(200,160,60,0.3); color:rgba(245,234,208,0.8); width:28px; height:28px; border-radius:5px; font-size:0.95rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+    .modal-close:hover { color:#f5ead0; }
+    .modal-body { padding:18px 20px; }
+    .detail-row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border); gap:12px; }
+    .detail-row:last-child { border-bottom:none; }
+    .detail-label { font-weight:600; color:var(--muted); font-size:0.82rem; }
+    .detail-value { color:var(--text); font-size:0.82rem; text-align:right; }
+    .status-badge { display:inline-flex; align-items:center; padding:2px 8px; border-radius:10px; font-size:0.63rem; font-weight:600; text-transform:uppercase; }
+    .status-confirmed { background:var(--green-bg); color:var(--green); }
+    .status-pending   { background:var(--amber-bg); color:var(--amber); }
+    .status-cancelled { background:var(--red-bg);   color:var(--red); }
+    .status-tentative { background:var(--blue-bg);  color:var(--blue); }
+    .status-completed { background:var(--bronze-bg);color:var(--bronze2); }
+    .modal-actions, .edit-modal-actions { display:flex; gap:8px; padding:14px 20px; border-top:1px solid var(--border); background:var(--card2); flex-wrap:wrap; }
+    .btn { padding:8px 14px; border:none; border-radius:7px; font-family:'Inter',sans-serif; font-size:0.78rem; font-weight:600; cursor:pointer; transition:all 0.18s; }
+    .btn-primary { background:linear-gradient(160deg,#3a2608 0%,#6a4a10 10%,#a07020 20%,#d4a030 30%,#f0c050 42%,#e8b838 50%,#c08820 60%,#906010 70%,#6a4810 82%,#4a3008 90%,#2e1e06 100%); color:#111008; font-weight:800; }
+    .btn-primary:hover { filter:brightness(1.08); transform:translateY(-1px); }
+    .btn-ghost { background:var(--card); color:var(--muted); border:1.5px solid var(--border); }
+    .btn-ghost:hover { border-color:var(--bronze2); color:var(--bronze2); }
+    .btn-red { background:var(--red-bg); color:var(--red); border:1px solid rgba(139,32,0,0.2); }
+    .btn-red:hover { background:var(--red); color:#fff; }
+    .btn-orange { background:var(--amber-bg); color:var(--amber); border:1px solid rgba(180,83,9,0.2); }
+    .btn-orange:hover { background:var(--amber); color:#fff; }
+    .edit-form { padding:18px 20px; display:flex; flex-direction:column; gap:12px; }
+    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .form-group { display:flex; flex-direction:column; gap:5px; }
+    .form-group label { font-size:0.68rem; font-weight:600; text-transform:uppercase; letter-spacing:0.8px; color:var(--muted); }
+    .form-group input, .form-group select, .form-group textarea { padding:8px 11px; border:1.5px solid var(--border); border-radius:7px; font-size:0.86rem; font-family:'Inter',sans-serif; color:var(--text); background:#fff; }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline:none; border-color:var(--bronze1); box-shadow:0 0 0 3px rgba(160,112,24,0.1); }
+    .form-group select { appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%236b5e48' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; padding-right:28px; }
+    .form-group textarea { resize:vertical; min-height:60px; }
+    .edit-error { background:var(--red-bg); color:var(--red); border:1px solid rgba(139,32,0,0.2); padding:8px 12px; border-radius:6px; display:none; font-size:0.82rem; margin-bottom:4px; }
+    .confirm-box { background:var(--card); border-radius:12px; padding:24px 28px; max-width:380px; width:100%; text-align:center; box-shadow:0 8px 40px rgba(0,0,0,0.4); }
+    .confirm-icon { font-size:2.5rem; margin-bottom:10px; }
+    .confirm-title { font-size:1.05rem; font-weight:700; color:var(--text); margin-bottom:8px; }
+    .confirm-msg { font-size:0.86rem; color:var(--muted); margin-bottom:20px; line-height:1.5; }
+    .confirm-btns { display:flex; gap:10px; justify-content:center; }
+    .confirm-btns .btn { min-width:110px; }
+    .toast { position:fixed; bottom:20px; right:20px; padding:10px 18px; border-radius:var(--radius); font-size:0.86rem; font-weight:500; z-index:9999; opacity:0; transform:translateY(10px); transition:all 0.3s; pointer-events:none; box-shadow:0 4px 16px rgba(0,0,0,0.15); }
+    .toast.show { opacity:1; transform:translateY(0); }
+    .toast.success { background:var(--card); color:var(--green); border-left:4px solid var(--green); }
+    .toast.error   { background:var(--card); color:var(--red);   border-left:4px solid var(--red); }
+    @media (max-width:640px) { .filter-group { margin-left:0; } .form-row { grid-template-columns:1fr; } .cal-legend { display:none; } }
+  </style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="topbar-brand">
+      <img class="brand-logo" src="icons/dka-logo.png" alt="DKA">
+      <span class="brand-name">Dave Kalz Agency</span>
+    </div>
+  </div>
+  <div class="sub-nav">
+    <button class="btn-subnav" onclick="createBooking()">+ New Booking</button>
+    <button class="btn-subnav" onclick="goToDashboard()">&#8592; Dashboard</button>
+  </div>
+
+  <div class="main">
+    <div class="stats-bar">
+      <div class="stat-card"><div class="stat-value" id="statTotal">0</div><div class="stat-label">Total</div></div>
+      <div class="stat-card"><div class="stat-value" style="color:var(--green);" id="statConfirmed">0</div><div class="stat-label">Confirmed</div></div>
+      <div class="stat-card"><div class="stat-value" style="color:var(--amber);" id="statPending">0</div><div class="stat-label">Pending</div></div>
+      <div class="cal-legend">
+        <div class="leg-item"><div class="leg-dot" style="background:var(--green);"></div>Confirmed</div>
+        <div class="leg-item"><div class="leg-dot" style="background:var(--bronze1);"></div>Pending</div>
+        <div class="leg-item"><div class="leg-dot" style="background:var(--blue);"></div>Tentative</div>
+        <div class="leg-item"><div class="leg-dot" style="background:var(--red);"></div>Cancelled</div>
+      </div>
+    </div>
+
+    <div class="calendar-controls">
+      <div class="month-nav">
+        <button onclick="previousMonth()">&#x2039;</button>
+        <div class="current-month" id="currentMonth">Loading…</div>
+        <button onclick="nextMonth()">&#x203A;</button>
+      </div>
+      <button class="btn-today" onclick="goToToday()">Today</button>
+      <div class="filter-group">
+        <label>Filter:</label>
+        <select id="filterVenue" onchange="renderCalendar()"><option value="">All Venues</option></select>
+        <select id="filterStatus" onchange="renderCalendar()">
+          <option value="">All Statuses</option>
+          <option value="Confirmed">Confirmed</option>
+          <option value="Pending">Pending</option>
+          <option value="Tentative">Tentative</option>
+          <option value="Cancelled">Cancelled</option>
+          <option value="Completed">Completed</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="calendar-wrap">
+      <div id="calendarContainer"></div>
+    </div>
+  </div>
+
+  <!-- Booking Detail Modal -->
+  <div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3 id="modalTitle">Booking Details</h3>
+        <button class="modal-close" onclick="closeModal()">&#x2715;</button>
+      </div>
+      <div class="modal-body" id="modalContent"></div>
+      <div class="modal-actions" id="modalActions"></div>
+    </div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div class="edit-modal-overlay" id="editModalOverlay" onclick="if(event.target===this)closeEditModal()">
+    <div class="edit-modal-box" onclick="event.stopPropagation()">
+      <div class="edit-modal-header">
+        <h3 id="editModalTitle">Edit Booking</h3>
+        <button class="modal-close" onclick="closeEditModal()">&#x2715;</button>
+      </div>
+      <div class="edit-form">
+        <div class="edit-error" id="editError"></div>
+        <input type="hidden" id="editBookingId">
+        <div class="form-row">
+          <div class="form-group"><label>Date</label><input type="date" id="editDate"></div>
+          <div class="form-group"><label>Status</label>
+            <select id="editStatus">
+              <option value="Pending">Pending</option>
+              <option value="Confirmed">Confirmed</option>
+              <option value="Tentative">Tentative</option>
+              <option value="Completed">Completed</option>
+              <option value="Cancelled">Cancelled</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Start Time</label><input type="time" id="editStartTime"></div>
+          <div class="form-group"><label>End Time</label><input type="time" id="editEndTime"></div>
+        </div>
+        <div class="form-group"><label>Sound &amp; Lights</label>
+          <select id="editSoundLights">
+            <option value="Yes">Venue Provides</option>
+            <option value="No">Band Provides</option>
+            <option value="Partial">Partial</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Notes</label><textarea id="editNotes" rows="3"></textarea></div>
+      </div>
+      <div class="edit-modal-actions">
+        <button class="btn btn-ghost" onclick="closeEditModal()">Cancel</button>
+        <button class="btn btn-primary" id="editSaveBtn" onclick="saveBookingEdit()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm Dialog -->
+  <div class="confirm-overlay" id="confirmOverlay" onclick="if(event.target===this)closeConfirm()">
+    <div class="confirm-box" onclick="event.stopPropagation()">
+      <div class="confirm-icon" id="confirmIcon">&#x26A0;</div>
+      <div class="confirm-title" id="confirmTitle">Are you sure?</div>
+      <div class="confirm-msg" id="confirmMsg"></div>
+      <div class="confirm-btns">
+        <button class="btn btn-ghost" onclick="closeConfirm()">Cancel</button>
+        <button class="btn" id="confirmActionBtn" onclick="confirmAction()">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="api.js"></script>
+  <script src="booking-calendar.js"></script>
+</body>
+</html>
