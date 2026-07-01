@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#2a1f0a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="DK Agency">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <title>Contract Repository — DK Agency</title>
+  <style>
+    :root {
+      --bronze1:#f0c050; --bronze2:#A07018; --bronze3:#c08820;
+      --bg:#f0ede6; --card:#fff; --card2:#faf8f4;
+      --border:#e8e0d0; --text:#1a1408; --muted:#6b5e48; --dim:#aaa;
+      --green:#7CB342; --radius:12px;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; padding:20px; }
+    .container { background:var(--card); max-width:1200px; margin:0 auto; border-radius:16px; box-shadow:0 4px 20px rgba(0,0,0,0.12); overflow:hidden; }
+    .topbar { background:linear-gradient(160deg,#3a2608 0%,#6a4a10 10%,#a07020 20%,#d4a030 30%,#f0c050 42%,#e8b838 50%,#c08820 60%,#906010 70%,#6a4810 82%,#4a3008 90%,#2e1e06 100%); padding:0 28px; height:48px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 2px 20px rgba(0,0,0,0.25); }
+    .topbar-brand { display:flex; align-items:center; gap:10px; }
+    .brand-logo { width:36px; height:36px; object-fit:contain; filter:invert(1) brightness(1.2); }
+    .brand-text { display:flex; flex-direction:column; gap:1px; }
+    .brand-name { font-size:0.85rem; font-weight:600; color:#f5ead0; }
+    .brand-sub  { font-size:0.6rem; letter-spacing:1.5px; text-transform:uppercase; color:rgba(240,192,80,0.7); }
+    .topbar-right { display:flex; gap:8px; align-items:center; }
+    .btn-topbar { background:rgba(0,0,0,0.2); color:rgba(245,234,208,0.85); border:1px solid rgba(200,160,60,0.25); padding:5px 14px; border-radius:6px; font-size:0.75rem; font-weight:600; font-family:inherit; cursor:pointer; transition:all 0.2s; }
+    .btn-topbar:hover { border-color:rgba(240,192,80,0.5); color:rgba(240,192,80,1); }
+    .inner { padding:20px 28px 32px; }
+    .stats-row { display:flex; gap:10px; margin-bottom:18px; flex-wrap:wrap; }
+    .stat-pill { background:var(--card2); border:1px solid var(--border); border-radius:20px; padding:6px 16px; display:flex; align-items:center; gap:8px; white-space:nowrap; }
+    .stat-pill .sv { font-family:'JetBrains Mono',monospace; font-size:1rem; font-weight:700; color:var(--bronze2); }
+    .stat-pill .sl { font-size:0.72rem; color:var(--muted); }
+    .stat-pill.signed { border-color:#a5d6a7; }
+    .stat-pill.signed .sv { color:#2e7d32; }
+    .stat-pill.pending { border-color:#ffe082; }
+    .stat-pill.pending .sv { color:#e65100; }
+    .toolbar { display:flex; align-items:center; gap:12px; padding:4px 0 14px; flex-wrap:wrap; }
+    .toolbar h2 { font-size:1.1rem; font-weight:800; color:var(--text); flex:1; }
+    .filter-tabs { display:flex; gap:4px; background:var(--card2); border:1px solid var(--border); border-radius:8px; padding:3px; }
+    .filter-tab { padding:5px 14px; border-radius:6px; font-size:0.75rem; font-weight:700; font-family:inherit; border:none; cursor:pointer; color:var(--muted); background:none; transition:all 0.15s; letter-spacing:0.3px; }
+    .filter-tab.active { background:var(--bronze2); color:#fff; }
+    .search-input { padding:7px 12px; border:1.5px solid var(--border); border-radius:8px; font-size:0.82rem; font-family:inherit; width:220px; color:var(--text); background:var(--card); }
+    .search-input:focus { outline:none; border-color:var(--bronze2); }
+    .table-wrap { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; font-size:0.83rem; min-width:700px; }
+    thead th { background:var(--card2); padding:10px 14px; text-align:left; font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--muted); border-bottom:2px solid var(--border); white-space:nowrap; cursor:pointer; user-select:none; }
+    thead th:hover { color:var(--bronze2); }
+    tbody tr { border-bottom:1px solid var(--border); transition:background 0.12s; }
+    tbody tr:hover { background:#fdf8f0; }
+    tbody tr:last-child { border-bottom:none; }
+    td { padding:11px 14px; vertical-align:middle; }
+    .td-band { font-weight:700; color:var(--text); }
+    .td-venue { color:var(--muted); font-size:0.8rem; }
+    .td-date { font-family:'JetBrains Mono',monospace; font-size:0.8rem; color:var(--muted); white-space:nowrap; }
+    .td-sent { font-size:0.75rem; color:var(--dim); white-space:nowrap; }
+    .badge { display:inline-block; padding:3px 10px; border-radius:10px; font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; white-space:nowrap; }
+    .badge-signed  { background:#e8f5e9; color:#2e7d32; border:1px solid #a5d6a7; }
+    .badge-sent    { background:#fff3e0; color:#e65100; border:1px solid #ffe082; }
+    .badge-pending { background:#f3f3f3; color:#777; border:1px solid #ddd; }
+    .btn-view { background:var(--card2); color:var(--bronze2); border:1px solid rgba(160,112,24,0.25); padding:4px 12px; border-radius:6px; font-size:0.72rem; font-weight:700; font-family:inherit; cursor:pointer; transition:all 0.15s; white-space:nowrap; }
+    .btn-view:hover { background:var(--bronze2); color:#fff; border-color:var(--bronze2); }
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:1000; align-items:center; justify-content:center; padding:20px; }
+    .modal-overlay.open { display:flex; }
+    .modal { background:var(--card); border-radius:14px; max-width:720px; width:100%; max-height:90vh; overflow-y:auto; box-shadow:0 10px 40px rgba(0,0,0,0.25); }
+    .modal-header { background:linear-gradient(160deg,#3a2608 0%,#6a4a10 10%,#a07020 20%,#d4a030 30%,#f0c050 42%,#e8b838 50%,#c08820 60%,#906010 70%,#6a4810 82%,#4a3008 90%,#2e1e06 100%); padding:18px 24px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; }
+    .modal-header h3 { color:#f5ead0; font-size:1.1rem; font-weight:800; }
+    .modal-close { background:rgba(0,0,0,0.25); color:#fff; border:none; border-radius:6px; width:28px; height:28px; font-size:1.1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+    .modal-close:hover { background:rgba(0,0,0,0.45); }
+    .modal-body { padding:24px; }
+    .modal-meta { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px; }
+    .meta-cell { background:var(--card2); border-radius:8px; padding:12px 14px; border-left:3px solid var(--bronze2); }
+    .meta-cell.signed { border-left-color:#2e7d32; }
+    .meta-cell-label { font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--muted); margin-bottom:3px; }
+    .meta-cell-value { font-size:0.9rem; font-weight:700; color:var(--text); }
+    .contract-body { background:#fafafa; border:1px solid var(--border); border-radius:10px; padding:20px; font-family:'Courier New',monospace; font-size:0.78rem; line-height:1.7; color:#333; white-space:pre-wrap; max-height:400px; overflow-y:auto; }
+    .sig-box { background:#e8f5e9; border:1.5px solid #a5d6a7; border-radius:10px; padding:16px 20px; margin-top:16px; display:flex; align-items:center; gap:14px; }
+    .sig-icon { font-size:2rem; flex-shrink:0; }
+    .sig-text strong { display:block; font-size:0.95rem; color:#2e7d32; }
+    .sig-text span { font-size:0.8rem; color:#555; }
+    .unsig-box { background:#fff3e0; border:1.5px solid #ffe082; border-radius:10px; padding:14px 18px; margin-top:14px; font-size:0.85rem; color:#e65100; font-weight:600; }
+    .empty { text-align:center; padding:60px 20px; color:var(--muted); }
+    .empty-icon { font-size:3rem; margin-bottom:12px; }
+    .loading { text-align:center; padding:50px; }
+    .spinner { border:2px solid var(--border); border-top:2px solid var(--bronze2); border-radius:50%; width:32px; height:32px; animation:spin 0.8s linear infinite; margin:0 auto 12px; }
+    @keyframes spin { to{ transform:rotate(360deg); } }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="topbar">
+    <div class="topbar-brand">
+      <img class="brand-logo" src="icons/dka-logo.png" alt="DKA">
+      <div class="brand-text">
+        <div class="brand-name">Dave Kalz Agency</div>
+        <div class="brand-sub">Contract Repository</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <button class="btn-topbar" onclick="goToDashboard()">&#8592; Dashboard</button>
+    </div>
+  </div>
+
+  <div class="inner">
+    <div class="stats-row">
+      <div class="stat-pill"><span class="sv" id="statTotal">—</span><span class="sl">Total</span></div>
+      <div class="stat-pill signed"><span class="sv" id="statSigned">—</span><span class="sl">Signed</span></div>
+      <div class="stat-pill pending"><span class="sv" id="statPending">—</span><span class="sl">Awaiting Signature</span></div>
+    </div>
+
+    <div class="toolbar">
+      <h2>&#x1F4CB; All Contracts</h2>
+      <input class="search-input" id="searchInput" placeholder="Search band or venue&#8230;" oninput="renderTable()">
+      <div class="filter-tabs">
+        <button class="filter-tab active" id="tabAll"    onclick="setFilter('all')">All</button>
+        <button class="filter-tab"        id="tabSigned" onclick="setFilter('signed')">&#x2705; Signed</button>
+        <button class="filter-tab"        id="tabSent"   onclick="setFilter('sent')">&#x23F3; Awaiting</button>
+      </div>
+    </div>
+
+    <div id="loadingState" class="loading"><div class="spinner"></div><p>Loading contracts&#8230;</p></div>
+    <div id="tableWrap" class="table-wrap" style="display:none;">
+      <table>
+        <thead>
+          <tr>
+            <th onclick="sortBy('bandName')">Band &#x21F5;</th>
+            <th onclick="sortBy('venueName')">Venue &#x21F5;</th>
+            <th onclick="sortBy('date')">Perf. Date &#x21F5;</th>
+            <th onclick="sortBy('status')">Status &#x21F5;</th>
+            <th onclick="sortBy('sentAt')">Sent &#x21F5;</th>
+            <th onclick="sortBy('signedAt')">Signed &#x21F5;</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="contractsTbody"></tbody>
+      </table>
+    </div>
+    <div id="emptyState" class="empty" style="display:none;">
+      <div class="empty-icon">&#x1F4CB;</div>
+      <p>No contracts found.</p>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h3 id="modalTitle">Contract Details</h3>
+      <button class="modal-close" onclick="closeModal()">&#x2715;</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script src="api.js"></script>
+<script src="contracts.js"></script>
+</body>
+</html>
