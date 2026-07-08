@@ -250,7 +250,7 @@ function selectVenue(venueId) {
     flyerStatus.className       = 'flyer-status';
     flyerBtn.disabled           = false;
     flyerBtn.textContent        = venue.email
-      ? '\u2709 Send Dave Kalz Agency Flyer to ' + venue.contact
+      ? '\u2709 Send Gig Matrix Flyer to ' + venue.contact
       : '\u2709 Send Flyer (no email on file)';
     flyerBtn.disabled           = !venue.email;
 
@@ -399,11 +399,11 @@ function sendFlyer() {
     renderList();
     setTimeout(function() {
       btn.disabled     = false;
-      btn.textContent  = '\u2709 Send Dave Kalz Agency Flyer to ' + venue.contact;
+      btn.textContent  = '\u2709 Send Gig Matrix Flyer to ' + venue.contact;
     }, 5000);
   }).catch(function(err) {
     btn.disabled     = false;
-    btn.textContent  = '\u2709 Send Dave Kalz Agency Flyer to ' + venue.contact;
+    btn.textContent  = '\u2709 Send Gig Matrix Flyer to ' + venue.contact;
     status.textContent = 'Error: ' + err.message;
     status.className   = 'flyer-status error';
   });
