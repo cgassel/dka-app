@@ -1,7 +1,7 @@
 {
-  "name": "Dave Kalz Agency",
-  "short_name": "DK Agency",
-  "description": "Dave Kalz Agency Booking System",
+  "name": "Gig Matrix",
+  "short_name": "Gig Matrix",
+  "description": "Gig Matrix Booking System",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
