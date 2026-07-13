@@ -622,6 +622,23 @@
       display: none; background: #ffebee; color: #c62828;
       padding: 10px 14px; border-radius: 8px; font-size: 0.88rem; margin-top: 8px;
     }
+
+    @media (max-width: 640px) {
+      .header { padding: 10px 12px; gap: 10px; flex-wrap: wrap; }
+      .header-title { font-size: 1.1rem; }
+      .legend { gap: 8px; }
+      .legend span, .legend-item span { font-size: 0.72rem; }
+      .header-controls { gap: 6px; width: 100%; justify-content: flex-start; }
+
+      .main { flex-direction: column; overflow: auto; }
+      #map { min-height: 45vh; flex: none; }
+      .side-panel { width: 100% !important; border-left: none; border-top: 2px solid #e0e0e0; max-height: 55vh; }
+      .side-panel.collapsed { max-height: 0; }
+
+      .detail-grid { grid-template-columns: 1fr; }
+      .vm-edit-row, .vm-edit-row3 { grid-template-columns: 1fr; }
+      .vm-edit-footer { flex-direction: column; }
+    }
   </style>
 </head>
 <body>

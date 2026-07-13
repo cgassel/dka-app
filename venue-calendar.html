@@ -332,6 +332,24 @@
       font-size:0.72rem; font-weight:700; font-family:'Inter',sans-serif;
       cursor:default; white-space:nowrap;
     }
+
+    @media (max-width: 640px) {
+      .topbar { padding: 0 14px; height: auto; min-height: 46px; flex-wrap: wrap; padding-top: 6px; padding-bottom: 6px; }
+      .brand-logo { width: 34px; height: 34px; }
+      .tab { padding: 11px 14px; font-size: 0.85rem; }
+      .tab-pane { padding: 14px; }
+      .cal-controls { flex-wrap: wrap; gap: 8px; }
+      .cal-legend { display: none; }
+      .month-lbl { min-width: auto; }
+      .cal-wrap { padding: 10px; }
+      .gcal-wrap { max-width: 100%; }
+      .modal { padding: 18px; }
+      .ep-modal { padding: 20px 16px 28px; }
+      .ep-row, .ep-row3 { grid-template-columns: 1fr; }
+      .ep-footer { flex-direction: column; }
+      .s-card { flex-direction: column; }
+      .s-score { flex-direction: row; gap: 8px; align-items: baseline; }
+    }
   </style>
 </head>
 <body>

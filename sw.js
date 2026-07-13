@@ -5,14 +5,14 @@
 // connection since they read/write live booking data.
 // ============================================================================
 
-const CACHE_NAME = 'dka-app-v3';
+const CACHE_NAME = 'dka-app-v4';
 const STATIC_ASSETS = [
   './index.html',
   './api.js',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
-  './icons/dka-logo.png',
+  './icons/gm-logo.png',
   './icons/apple-touch-icon.png',
   // Agent pages
   './agent-dashboard.html',   './agent-dashboard.js',
