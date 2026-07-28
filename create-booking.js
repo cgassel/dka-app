@@ -421,6 +421,7 @@ async function handleSubmit(event) {
   document.getElementById('warningMsg').style.display  = 'none';
   document.getElementById('createBookingForm').style.display = 'none';
   document.getElementById('loading').style.display     = 'block';
+  window.scrollTo(0, 0);
 
   var bookingData = {
     venueId:       document.getElementById('venue').value,
