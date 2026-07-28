@@ -390,18 +390,70 @@ function updateCommissionSummary() {
   }
 }
 
+function _cbEsc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {
+    return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+  });
+}
+
+function _cbCleanTime(t) {
+  if (!t) return '';
+  var m = String(t).match(/^(\d{1,2}):(\d{2})/);
+  if (!m) return String(t);
+  var h = parseInt(m[1], 10), mn = m[2], ap = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  return h + ':' + mn + ' ' + ap;
+}
+
+// Tracks whether the currently-selected venue+date has existing, non-cancelled
+// bookings, so handleSubmit can require explicit confirmation before allowing
+// a double/triple booking through.
+var _venueConflict = { hasConflict: false, count: 0 };
+
 function checkAvailability() {
   var date    = document.getElementById('bookingDate').value;
   var venueId = document.getElementById('venue').value;
-  if (!date || !venueId) return;
-  callApi('checkVenueAvailability', [venueId, date]).then(function(hasBooking) {
-    if (hasBooking) {
-      document.getElementById('warningMsg').style.display = 'block';
-      document.getElementById('warningMsg').innerHTML = '<strong>&#x26A0; Warning:</strong> This venue already has a booking on this date!';
-    } else {
-      document.getElementById('warningMsg').style.display = 'none';
+  var warnEl  = document.getElementById('warningMsg');
+
+  _venueConflict = { hasConflict: false, count: 0 };
+
+  if (!date || !venueId) {
+    warnEl.style.display = 'none';
+    return;
+  }
+
+  callApi('api_getVenueBookings', [venueId]).then(function(bookings) {
+    // Re-check the fields are still what we fetched for — the user may have
+    // changed venue/date again while this request was in flight.
+    if (document.getElementById('bookingDate').value !== date ||
+        document.getElementById('venue').value !== venueId) return;
+
+    var matches = (bookings || []).filter(function(b) {
+      return (b.date || '').substring(0, 10) === date && b.status !== 'Cancelled';
+    });
+
+    _venueConflict = { hasConflict: matches.length > 0, count: matches.length };
+
+    if (matches.length === 0) {
+      warnEl.style.display = 'none';
+      return;
     }
-  }).catch(function() {});
+
+    var headline = matches.length === 1
+      ? 'This venue already has a booking on this date:'
+      : 'This venue already has ' + matches.length + ' bookings on this date (double/triple booking):';
+
+    var details = matches.map(function(b) {
+      var time = b.startTime ? (' at ' + _cbCleanTime(b.startTime)) : '';
+      var status = b.status ? ' — ' + _cbEsc(b.status) : '';
+      return '&bull; <strong>' + _cbEsc(b.bandName || 'Unknown band') + '</strong>' + time + status;
+    }).join('<br>');
+
+    warnEl.style.display = 'block';
+    warnEl.innerHTML = '<strong>&#x26A0; Warning:</strong> ' + headline + '<br>' + details;
+  }).catch(function() {
+    warnEl.style.display = 'none';
+  });
 }
 
 async function handleSubmit(event) {
@@ -413,6 +465,13 @@ async function handleSubmit(event) {
     document.getElementById('errorMsg').style.display = 'block';
     document.getElementById('errorMsg').innerHTML = '<strong>Error:</strong> Commission % must be between 0 and 100.';
     return false;
+  }
+
+  if (_venueConflict.hasConflict) {
+    var conflictMsg = _venueConflict.count === 1
+      ? 'This venue already has a booking on this date. Create another booking here anyway?'
+      : 'This venue already has ' + _venueConflict.count + ' bookings on this date (this would be a double/triple booking). Create another booking here anyway?';
+    if (!window.confirm(conflictMsg)) return false;
   }
 
   isSubmitting = true;
