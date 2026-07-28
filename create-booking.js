@@ -151,7 +151,14 @@ window.onload = function() {
     _contractTemplate = tmpl;
   }).catch(function() {});
 
-  if (_prefillKey && _prefillKey.trim() !== '') {
+  var _returnBand = new URLSearchParams(window.location.search).get('returnBand') || '';
+
+  if (_returnBand) {
+    var decodedName = decodeURIComponent(_returnBand);
+    Promise.all([loadVenues(), loadBands(decodedName)]).then(function() {
+      _restoreDraftAfterAddBand(decodedName);
+    });
+  } else if (_prefillKey && _prefillKey.trim() !== '') {
     callApi('api_getBookingPrefillByKey', [_prefillKey]).then(function(data) {
       if (data && (data.venueId || data.bandId)) {
         _prefill    = data;
@@ -167,7 +174,7 @@ window.onload = function() {
 };
 
 function loadVenues() {
-  callApi('api_getVenuesFullData', []).then(function(data) {
+  return callApi('api_getVenuesFullData', []).then(function(data) {
     venues = data;
     var select = document.getElementById('venue');
     select.innerHTML = '<option value="">-- Select Venue --</option>';
@@ -206,21 +213,93 @@ function updateEmailHint() {
   }
 }
 
-function loadBands() {
-  callApi('api_getBandsFullData', []).then(function(data) {
+function loadBands(selectBandName) {
+  return callApi('api_getBandsFullData', []).then(function(data) {
     bands = data;
     var select = document.getElementById('band');
     select.innerHTML = '<option value="">-- Select Band --</option>';
+    var matchOpt = null;
     data.forEach(function(band) {
       var opt = document.createElement('option');
       opt.value = band.id;
       opt.textContent = band.name + ' - ' + band.genre + ' (' + band.rating + ')';
       opt.dataset.band = JSON.stringify(band);
       select.appendChild(opt);
+      if (selectBandName && band.name === selectBandName) matchOpt = opt;
     });
     _bandsDone = true;
     _tryApplyPrefill();
+    if (matchOpt) {
+      select.value = matchOpt.value;
+      updateBandInfo();
+    }
   }).catch(function(e) { alert('Error loading bands: ' + e.message); });
+}
+
+var DKA_DRAFT_KEY = 'dka_cb_draft';
+
+// Saves the in-progress booking form to sessionStorage, then navigates to
+// the full Add Band page. add-band.js reads ?returnTo=create-booking and,
+// on success, sends the user back here with ?returnBand=<new band name>.
+function goToAddBand() {
+  var draft = {
+    venueId:               (document.getElementById('venue') || {}).value || '',
+    bookingDate:           (document.getElementById('bookingDate') || {}).value || '',
+    startTime:             (document.getElementById('startTime') || {}).value || '',
+    endTime:               (document.getElementById('endTime') || {}).value || '',
+    soundLights:           (document.getElementById('soundLights') || {}).value || '',
+    commissionPct:         (document.getElementById('commissionPct') || {}).value || '',
+    notes:                 (document.getElementById('notes') || {}).value || '',
+    status:                (document.getElementById('status') || {}).value || '',
+    sendConfirmationEmail: !!(document.getElementById('sendConfirmationEmail') || {}).checked
+  };
+  try { sessionStorage.setItem(DKA_DRAFT_KEY, JSON.stringify(draft)); } catch (e) {}
+  window.location.href = 'add-band.html?returnTo=create-booking';
+}
+
+// After venues + bands are (re)loaded and the new band is selected, restore
+// whatever the user had already filled in before they left for Add Band.
+function _restoreDraftAfterAddBand(bandName) {
+  var raw = null;
+  try { raw = sessionStorage.getItem(DKA_DRAFT_KEY); } catch (e) {}
+  var draft = null;
+  if (raw) { try { draft = JSON.parse(raw); } catch (e) { draft = null; } }
+
+  if (draft) {
+    if (draft.venueId) { if (_selectById('venue', draft.venueId)) updateVenueInfo(); }
+    if (draft.bookingDate) {
+      var dateEl = document.getElementById('bookingDate');
+      if (dateEl) { dateEl.value = draft.bookingDate; if (typeof checkAvailability === 'function') checkAvailability(); }
+    }
+    if (draft.startTime) { var stEl = document.getElementById('startTime'); if (stEl) stEl.value = draft.startTime; }
+    if (draft.endTime)   { var etEl = document.getElementById('endTime');   if (etEl) etEl.value = draft.endTime; }
+    if (draft.soundLights) { var slEl = document.getElementById('soundLights'); if (slEl) slEl.value = draft.soundLights; }
+    if (draft.status) { var statusEl = document.getElementById('status'); if (statusEl) statusEl.value = draft.status; }
+    if (draft.notes) { var notesEl = document.getElementById('notes'); if (notesEl) notesEl.value = draft.notes; }
+    if (typeof draft.sendConfirmationEmail === 'boolean') {
+      var emailCb = document.getElementById('sendConfirmationEmail');
+      if (emailCb) emailCb.checked = draft.sendConfirmationEmail;
+    }
+    if (typeof updatePayAmount === 'function') updatePayAmount();
+    var commEl = document.getElementById('commissionPct');
+    if (commEl) {
+      commEl.value = draft.commissionPct || commEl.value;
+      if (typeof updateCommissionSummary === 'function') updateCommissionSummary();
+    }
+    try { sessionStorage.removeItem(DKA_DRAFT_KEY); } catch (e) {}
+  }
+
+  var banner = document.getElementById('newBandBanner');
+  var nameEl = document.getElementById('newBandNameText');
+  if (banner && nameEl) {
+    nameEl.textContent = bandName;
+    banner.classList.add('show');
+  }
+
+  // Clean the query string so a page refresh doesn't re-trigger this.
+  if (window.history && window.history.replaceState) {
+    window.history.replaceState({}, '', window.location.pathname);
+  }
 }
 
 function updateVenueInfo() {
