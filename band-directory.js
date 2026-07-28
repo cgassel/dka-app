@@ -363,15 +363,48 @@ function deleteFromView() {
   deleteBand(currentViewIndex);
 }
 
+// Custom in-page modal — replaces alert()/confirm(), which are unreliable
+// inside native app wrappers (especially iOS WKWebView).
+var _appModalCallback = null;
+
+function showConfirmModal(message, onConfirm, opts) {
+  opts = opts || {};
+  document.getElementById('appModalTitle').textContent = opts.title || 'Please Confirm';
+  document.getElementById('appModalMessage').textContent = message;
+  document.getElementById('appModalFooter').innerHTML =
+    '<button type="button" class="app-modal-btn-secondary" onclick="_appModalRespond(false)">' + (opts.cancelLabel || 'Cancel') + '</button>' +
+    '<button type="button" class="app-modal-btn-primary" onclick="_appModalRespond(true)">' + (opts.confirmLabel || 'Confirm') + '</button>';
+  _appModalCallback = onConfirm;
+  document.getElementById('appModalOverlay').classList.add('show');
+}
+
+function showAlertModal(message, onClose, opts) {
+  opts = opts || {};
+  document.getElementById('appModalTitle').textContent = opts.title || 'Notice';
+  document.getElementById('appModalMessage').textContent = message;
+  document.getElementById('appModalFooter').innerHTML =
+    '<button type="button" class="app-modal-btn-primary" style="flex:1;" onclick="_appModalRespond(true)">OK</button>';
+  _appModalCallback = onClose || null;
+  document.getElementById('appModalOverlay').classList.add('show');
+}
+
+function _appModalRespond(confirmed) {
+  document.getElementById('appModalOverlay').classList.remove('show');
+  var cb = _appModalCallback;
+  _appModalCallback = null;
+  if (confirmed && typeof cb === 'function') cb();
+}
+
 function deleteBand(index) {
   var band = filteredBands[index]; if (!band) return;
-  if (!confirm('Delete ' + band.name + '? This cannot be undone.')) return;
-  callApi('api_deleteBand', [band.id]).then(function() {
-    allBands = allBands.filter(function(b) { return b.id !== band.id; });
-    updateStats(allBands); filterBands();
-  }).catch(function(err) {
-    alert('Error deleting band: ' + err.message);
-  });
+  showConfirmModal('Delete ' + band.name + '? This cannot be undone.', function() {
+    callApi('api_deleteBand', [band.id]).then(function() {
+      allBands = allBands.filter(function(b) { return b.id !== band.id; });
+      updateStats(allBands); filterBands();
+    }).catch(function(err) {
+      showAlertModal('Error deleting band: ' + err.message);
+    });
+  }, { title: 'Delete Band', confirmLabel: 'Delete' });
 }
 
 function addBand(){ window.location.href = 'add-band.html'; }
