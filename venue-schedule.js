@@ -9,6 +9,38 @@
 var DAYS     = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 var DAY_FULL = { Mon:'Monday', Tue:'Tuesday', Wed:'Wednesday', Thu:'Thursday', Fri:'Friday', Sat:'Saturday', Sun:'Sunday' };
 
+// Custom in-page modal — replaces alert()/confirm(), which are unreliable
+// inside native app wrappers (especially iOS WKWebView).
+var _appModalCallback = null;
+
+function showConfirmModal(message, onConfirm, opts) {
+  opts = opts || {};
+  document.getElementById('appModalTitle').textContent = opts.title || 'Please Confirm';
+  document.getElementById('appModalMessage').textContent = message;
+  document.getElementById('appModalFooter').innerHTML =
+    '<button type="button" class="app-modal-btn-secondary" onclick="_appModalRespond(false)">' + (opts.cancelLabel || 'Cancel') + '</button>' +
+    '<button type="button" class="app-modal-btn-primary" onclick="_appModalRespond(true)">' + (opts.confirmLabel || 'Confirm') + '</button>';
+  _appModalCallback = onConfirm;
+  document.getElementById('appModalOverlay').classList.add('show');
+}
+
+function showAlertModal(message, onClose, opts) {
+  opts = opts || {};
+  document.getElementById('appModalTitle').textContent = opts.title || 'Notice';
+  document.getElementById('appModalMessage').textContent = message;
+  document.getElementById('appModalFooter').innerHTML =
+    '<button type="button" class="app-modal-btn-primary" style="flex:1;" onclick="_appModalRespond(true)">OK</button>';
+  _appModalCallback = onClose || null;
+  document.getElementById('appModalOverlay').classList.add('show');
+}
+
+function _appModalRespond(confirmed) {
+  document.getElementById('appModalOverlay').classList.remove('show');
+  var cb = _appModalCallback;
+  _appModalCallback = null;
+  if (confirmed && typeof cb === 'function') cb();
+}
+
 var TIME_OPTIONS = (function() {
   var opts = [];
   function fmt(h, m) {
@@ -56,8 +88,9 @@ window.onload = function() {
     updateHint();
     updateSummary();
   }).catch(function(e) {
-    alert('Error loading venue: ' + e.message);
-    window.location.href = 'venue-calendar.html';
+    showAlertModal('Error loading venue: ' + e.message, function() {
+      window.location.href = 'venue-calendar.html';
+    });
   });
 };
 
@@ -180,16 +213,17 @@ function updateHint() {
 // CLEAR / SAVE
 // ═══════════════════════════════════════════════════════════════════════════
 function clearAll() {
-  if (!confirm('Clear your entire schedule?')) return;
-  DAYS.forEach(function(d) {
-    delete activeDays[d];
-    document.querySelector('.day-toggle[data-day="'+d+'"]').classList.remove('active');
-    document.getElementById('panel-'    + d).classList.remove('open');
-    document.getElementById('slotRows-' + d).innerHTML = '';
-    document.getElementById('slots-'   + d).value = '1';
-  });
-  updateHint();
-  updateSummary();
+  showConfirmModal('Clear your entire schedule?', function() {
+    DAYS.forEach(function(d) {
+      delete activeDays[d];
+      document.querySelector('.day-toggle[data-day="'+d+'"]').classList.remove('active');
+      document.getElementById('panel-'    + d).classList.remove('open');
+      document.getElementById('slotRows-' + d).innerHTML = '';
+      document.getElementById('slots-'   + d).value = '1';
+    });
+    updateHint();
+    updateSummary();
+  }, { title: 'Clear Schedule', confirmLabel: 'Clear' });
 }
 
 function saveSchedule() {
