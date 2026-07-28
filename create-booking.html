@@ -146,6 +146,24 @@
     }
     .new-band-banner.show { display:flex; }
 
+    .modal-overlay {
+      display:none; position:fixed; inset:0; background:rgba(20,15,5,0.55);
+      z-index:1000; align-items:flex-start; justify-content:center;
+      padding:60px 16px; overflow-y:auto;
+    }
+    .modal-overlay.show { display:flex; }
+    .modal-card {
+      background:var(--card); border-radius:14px; max-width:440px; width:100%;
+      box-shadow:0 12px 40px rgba(0,0,0,0.3); border:1px solid var(--border);
+    }
+    .modal-card-header { padding:20px 24px 0; }
+    .modal-card-header h2 { margin:0; font-size:1.15rem; color:var(--bronze3); display:flex; align-items:center; gap:8px; }
+    .modal-card-body { padding:14px 24px 4px; }
+    .modal-card-footer {
+      display:flex; gap:10px; padding:20px 24px 22px;
+    }
+    .modal-card-footer button { flex:1; padding:13px 20px; font-size:0.95rem; margin:0; }
+
     @media (max-width: 640px) {
       body { padding: 12px; }
       .container { padding: 18px 14px; border-radius: 12px; }
@@ -156,6 +174,9 @@
       button { padding: 14px 20px; font-size: 1rem; }
       .contract-options { flex-direction: column; }
       .contract-textarea { min-height: 240px; font-size: 0.82rem; }
+      .modal-overlay { padding: 0; align-items: stretch; }
+      .modal-card { max-width: 100%; min-height: 100%; border-radius: 0; display: flex; flex-direction: column; justify-content: center; }
+      .modal-card-footer { flex-direction: column; }
     }
   </style>
 </head>
@@ -350,6 +371,20 @@
     </div>
   </div>
 
+  <div class="modal-overlay" id="confirmModalOverlay">
+    <div class="modal-card">
+      <div class="modal-card-header">
+        <h2 id="confirmModalTitle">&#9888; Possible Duplicate Booking</h2>
+      </div>
+      <div class="modal-card-body">
+        <p id="confirmModalMessage" style="margin:0;line-height:1.6;color:var(--text);"></p>
+      </div>
+      <div class="modal-card-footer" id="confirmModalFooter">
+        <button type="button" class="btn-secondary" onclick="_confirmModalRespond(false)">Cancel</button>
+        <button type="button" class="btn-primary" onclick="_confirmModalRespond(true)">Create Anyway</button>
+      </div>
+    </div>
+  </div>
 
   <script src="api.js"></script>
   <script src="create-booking.js"></script>
