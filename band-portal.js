@@ -13,6 +13,38 @@ var gigMonth = today.getMonth();
 var allBookings  = [];
 var bandId   = null;
 var gcalEvents   = [];
+
+// Custom in-page modal — replaces alert()/confirm(), which are unreliable
+// inside native app wrappers (especially iOS WKWebView).
+var _appModalCallback = null;
+
+function showConfirmModal(message, onConfirm, opts) {
+  opts = opts || {};
+  document.getElementById('appModalTitle').textContent = opts.title || 'Please Confirm';
+  document.getElementById('appModalMessage').textContent = message;
+  document.getElementById('appModalFooter').innerHTML =
+    '<button type="button" class="app-modal-btn-secondary" onclick="_appModalRespond(false)">' + (opts.cancelLabel || 'Cancel') + '</button>' +
+    '<button type="button" class="app-modal-btn-primary" onclick="_appModalRespond(true)">' + (opts.confirmLabel || 'Confirm') + '</button>';
+  _appModalCallback = onConfirm;
+  document.getElementById('appModalOverlay').classList.add('show');
+}
+
+function showAlertModal(message, onClose, opts) {
+  opts = opts || {};
+  document.getElementById('appModalTitle').textContent = opts.title || 'Notice';
+  document.getElementById('appModalMessage').textContent = message;
+  document.getElementById('appModalFooter').innerHTML =
+    '<button type="button" class="app-modal-btn-primary" style="flex:1;" onclick="_appModalRespond(true)">OK</button>';
+  _appModalCallback = onClose || null;
+  document.getElementById('appModalOverlay').classList.add('show');
+}
+
+function _appModalRespond(confirmed) {
+  document.getElementById('appModalOverlay').classList.remove('show');
+  var cb = _appModalCallback;
+  _appModalCallback = null;
+  if (confirmed && typeof cb === 'function') cb();
+}
 var gcalIsConnected = false;
 
 var availYear      = today.getFullYear();
@@ -37,14 +69,16 @@ window.onload = function() {
   }
 
   callApi('getCurrentBandById', [bidParam]).then(function(band) {
-    if (!band) { alert('Session expired. Please log in again.'); window.location.href = 'index.html'; return; }
+    if (!band) {
+      showAlertModal('Session expired. Please log in again.', function() { window.location.href = 'index.html'; });
+      return;
+    }
     bandId = String(band.id);
     document.getElementById('bandName').textContent = band.name;
     loadBookings();
     loadAvailability();
   }).catch(function(e) {
-    alert('Error loading band data: ' + e.message);
-    window.location.href = 'index.html';
+    showAlertModal('Error loading band data: ' + e.message, function() { window.location.href = 'index.html'; });
   });
 };
 
@@ -344,16 +378,17 @@ function connectGcal() {
 }
 
 function disconnectGcal() {
-  if (!confirm('Disconnect Google Calendar? Future bookings will no longer be added automatically.')) return;
-  callApi('api_disconnectGcal', [bandId]).then(function() {
-    gcalIsConnected = false;
-    document.getElementById('gcalConnected').style.display = 'none';
-    document.getElementById('gcalDisconnected').style.display = 'flex';
-    document.getElementById('gcalConnectBtn').style.display = 'flex';
-    showToast('Google Calendar disconnected.', 'success');
-  }).catch(function(err) {
-    showToast('Error disconnecting: ' + err.message, 'error');
-  });
+  showConfirmModal('Disconnect Google Calendar? Future bookings will no longer be added automatically.', function() {
+    callApi('api_disconnectGcal', [bandId]).then(function() {
+      gcalIsConnected = false;
+      document.getElementById('gcalConnected').style.display = 'none';
+      document.getElementById('gcalDisconnected').style.display = 'flex';
+      document.getElementById('gcalConnectBtn').style.display = 'flex';
+      showToast('Google Calendar disconnected.', 'success');
+    }).catch(function(err) {
+      showToast('Error disconnecting: ' + err.message, 'error');
+    });
+  }, { title: 'Disconnect Google Calendar', confirmLabel: 'Disconnect' });
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
