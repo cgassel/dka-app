@@ -187,7 +187,7 @@ function loadVenues() {
     });
     _venuesDone = true;
     _tryApplyPrefill();
-  }).catch(function(e) { alert('Error loading venues: ' + e.message); });
+  }).catch(function(e) { openAlertModal('Error loading venues: ' + e.message); });
 }
 
 function toggleEmailCheckbox() {
@@ -233,7 +233,7 @@ function loadBands(selectBandName) {
       select.value = matchOpt.value;
       updateBandInfo();
     }
-  }).catch(function(e) { alert('Error loading bands: ' + e.message); });
+  }).catch(function(e) { openAlertModal('Error loading bands: ' + e.message); });
 }
 
 var DKA_DRAFT_KEY = 'dka_cb_draft';
@@ -456,6 +456,40 @@ function checkAvailability() {
   });
 }
 
+// Custom in-page confirm/alert modal — replaces window.confirm()/alert(),
+// which are unreliable inside native app wrappers (especially iOS WKWebView).
+// This is plain HTML/CSS/JS, so it renders identically on web, installed
+// PWA, and any future native-wrapped build.
+var _confirmModalCallback = null;
+
+function openConfirmModal(message, onConfirm, opts) {
+  opts = opts || {};
+  document.getElementById('confirmModalTitle').innerHTML = opts.title || '&#9888; Please Confirm';
+  document.getElementById('confirmModalMessage').textContent = message;
+  document.getElementById('confirmModalFooter').innerHTML =
+    '<button type="button" class="btn-secondary" onclick="_confirmModalRespond(false)">' + (opts.cancelLabel || 'Cancel') + '</button>' +
+    '<button type="button" class="btn-primary" onclick="_confirmModalRespond(true)">' + (opts.confirmLabel || 'Confirm') + '</button>';
+  _confirmModalCallback = onConfirm;
+  document.getElementById('confirmModalOverlay').classList.add('show');
+}
+
+function openAlertModal(message, onClose, opts) {
+  opts = opts || {};
+  document.getElementById('confirmModalTitle').innerHTML = opts.title || 'Notice';
+  document.getElementById('confirmModalMessage').textContent = message;
+  document.getElementById('confirmModalFooter').innerHTML =
+    '<button type="button" class="btn-primary" style="flex:1;" onclick="_confirmModalRespond(true)">OK</button>';
+  _confirmModalCallback = onClose || null;
+  document.getElementById('confirmModalOverlay').classList.add('show');
+}
+
+function _confirmModalRespond(confirmed) {
+  document.getElementById('confirmModalOverlay').classList.remove('show');
+  var cb = _confirmModalCallback;
+  _confirmModalCallback = null;
+  if (confirmed && typeof cb === 'function') cb();
+}
+
 async function handleSubmit(event) {
   event.preventDefault();
   if (isSubmitting) return false;
@@ -470,10 +504,16 @@ async function handleSubmit(event) {
   if (_venueConflict.hasConflict) {
     var conflictMsg = _venueConflict.count === 1
       ? 'This venue already has a booking on this date. Create another booking here anyway?'
-      : 'This venue already has ' + _venueConflict.count + ' bookings on this date (this would be a double/triple booking). Create another booking here anyway?';
-    if (!window.confirm(conflictMsg)) return false;
+      : 'This venue already has ' + _venueConflict.count + ' bookings on this date — this would be a double/triple booking. Create another booking here anyway?';
+    openConfirmModal(conflictMsg, function() { _submitBooking(pct); }, { title: '&#9888; Possible Duplicate Booking', confirmLabel: 'Create Anyway' });
+    return false;
   }
 
+  _submitBooking(pct);
+  return false;
+}
+
+async function _submitBooking(pct) {
   isSubmitting = true;
   document.getElementById('successMsg').style.display  = 'none';
   document.getElementById('errorMsg').style.display    = 'none';
