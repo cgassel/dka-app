@@ -193,7 +193,7 @@
       <div class="section-title">Select Venue</div>
       <div class="form-group">
         <label>Venue <span class="required">*</span></label>
-        <select id="venue" required onchange="updateVenueInfo()">
+        <select id="venue" required onchange="updateVenueInfo(); checkAvailability();">
           <option value="">-- Loading venues... --</option>
         </select>
       </div>
