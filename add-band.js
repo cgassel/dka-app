@@ -116,6 +116,7 @@ async function handleSubmit(event) {
   document.getElementById('addBandForm').style.display = 'none';
   document.getElementById('buttonGroup').style.display = 'none';
   document.getElementById('loading').style.display     = 'block';
+  window.scrollTo(0, 0);
 
   var bandData = {
     bandName:          document.getElementById('bandName').value,
