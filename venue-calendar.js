@@ -13,6 +13,38 @@ var venueObj   = null;
 var allBookings= [];
 var scheduleObj= {};
 var suggLoaded = false;
+
+// Custom in-page modal — replaces alert()/confirm(), which are unreliable
+// inside native app wrappers (especially iOS WKWebView).
+var _appModalCallback = null;
+
+function showConfirmModal(message, onConfirm, opts) {
+  opts = opts || {};
+  document.getElementById('appModalTitle').textContent = opts.title || 'Please Confirm';
+  document.getElementById('appModalMessage').textContent = message;
+  document.getElementById('appModalFooter').innerHTML =
+    '<button type="button" class="app-modal-btn-secondary" onclick="_appModalRespond(false)">' + (opts.cancelLabel || 'Cancel') + '</button>' +
+    '<button type="button" class="app-modal-btn-primary" onclick="_appModalRespond(true)">' + (opts.confirmLabel || 'Confirm') + '</button>';
+  _appModalCallback = onConfirm;
+  document.getElementById('appModalOverlay').classList.add('show');
+}
+
+function showAlertModal(message, onClose, opts) {
+  opts = opts || {};
+  document.getElementById('appModalTitle').textContent = opts.title || 'Notice';
+  document.getElementById('appModalMessage').textContent = message;
+  document.getElementById('appModalFooter').innerHTML =
+    '<button type="button" class="app-modal-btn-primary" style="flex:1;" onclick="_appModalRespond(true)">OK</button>';
+  _appModalCallback = onClose || null;
+  document.getElementById('appModalOverlay').classList.add('show');
+}
+
+function _appModalRespond(confirmed) {
+  document.getElementById('appModalOverlay').classList.remove('show');
+  var cb = _appModalCallback;
+  _appModalCallback = null;
+  if (confirmed && typeof cb === 'function') cb();
+}
 var gcalConnected    = false;
 var gcalStatusLoaded = false;
 var gcalEvents       = [];
@@ -39,7 +71,10 @@ window.onload = function() {
 };
 
 function onVenueLoaded(venue) {
-  if (!venue) { alert('Session expired.'); window.location.href = 'index.html'; return; }
+  if (!venue) {
+    showAlertModal('Session expired.', function() { window.location.href = 'index.html'; });
+    return;
+  }
   venueObj = venue;
   venueId  = venue.id;
   document.getElementById('hdrVenue').textContent = venue.name;
@@ -279,18 +314,19 @@ function connectGcal(){
 }
 
 function disconnectGcal(){
-  if(!confirm('Disconnect Google Calendar?')) return;
-  callApi('api_disconnectVenueGcal', [venueId]).then(function() {
-    gcalConnected=false;
-    document.getElementById('gcalConnected').style.display='none';
-    document.getElementById('gcalDisconnected').style.display='flex';
-    document.getElementById('gcalConnectBtn').style.display='flex';
-    document.getElementById('gcalRefreshNote').style.display='none';
-    suggLoaded=false;
-    toast('Google Calendar disconnected.','info');
-  }).catch(function(e) {
-    toast('Error: '+e.message,'error');
-  });
+  showConfirmModal('Disconnect Google Calendar?', function() {
+    callApi('api_disconnectVenueGcal', [venueId]).then(function() {
+      gcalConnected=false;
+      document.getElementById('gcalConnected').style.display='none';
+      document.getElementById('gcalDisconnected').style.display='flex';
+      document.getElementById('gcalConnectBtn').style.display='flex';
+      document.getElementById('gcalRefreshNote').style.display='none';
+      suggLoaded=false;
+      toast('Google Calendar disconnected.','info');
+    }).catch(function(e) {
+      toast('Error: '+e.message,'error');
+    });
+  }, { title: 'Disconnect Google Calendar', confirmLabel: 'Disconnect' });
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
