@@ -109,6 +109,23 @@
     .no-results { text-align:center; padding:60px 20px; color:#888; }
     .no-results h3 { font-family:'Inter',sans-serif; font-size:1.5rem; margin-bottom:8px; color:#555; }
     @media (max-width:600px) { .row { grid-template-columns:1fr; } .band-meta { grid-template-columns:1fr 1fr; } .band-rates { flex-direction:column; } }
+
+    .app-modal-overlay { display:none; position:fixed; inset:0; background:rgba(20,15,5,0.55); z-index:2000; align-items:flex-start; justify-content:center; padding:60px 16px; overflow-y:auto; }
+    .app-modal-overlay.show { display:flex; }
+    .app-modal-card { background:#fff; border-radius:14px; max-width:440px; width:100%; box-shadow:0 12px 40px rgba(0,0,0,0.3); }
+    .app-modal-header { padding:20px 24px 0; }
+    .app-modal-header h2 { margin:0; font-size:1.15rem; color:#7A5210; }
+    .app-modal-body { padding:14px 24px 4px; }
+    .app-modal-body p { margin:0; line-height:1.6; color:#1a1408; white-space:pre-line; }
+    .app-modal-footer { display:flex; gap:10px; padding:20px 24px 22px; }
+    .app-modal-footer button { flex:1; padding:13px 20px; font-size:0.95rem; border:none; border-radius:8px; font-weight:600; cursor:pointer; }
+    .app-modal-btn-primary { background:#A07018; color:#fff; }
+    .app-modal-btn-secondary { background:#f5f5f5; color:#333; }
+    @media (max-width: 640px) {
+      .app-modal-overlay { padding:0; align-items:stretch; }
+      .app-modal-card { max-width:100%; min-height:100%; border-radius:0; display:flex; flex-direction:column; justify-content:center; }
+      .app-modal-footer { flex-direction:column; }
+    }
   </style>
 </head>
 <body>
@@ -246,6 +263,14 @@
         </div>
       </div>
 
+    </div>
+  </div>
+
+  <div class="app-modal-overlay" id="appModalOverlay">
+    <div class="app-modal-card">
+      <div class="app-modal-header"><h2 id="appModalTitle">Please Confirm</h2></div>
+      <div class="app-modal-body"><p id="appModalMessage"></p></div>
+      <div class="app-modal-footer" id="appModalFooter"></div>
     </div>
   </div>
 
