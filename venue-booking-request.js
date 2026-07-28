@@ -8,6 +8,38 @@ var venueId      = null;
 var matchedBands = [];
 var currentRequestData = null;
 
+// Custom in-page modal — replaces alert()/confirm(), which are unreliable
+// inside native app wrappers (especially iOS WKWebView).
+var _appModalCallback = null;
+
+function showConfirmModal(message, onConfirm, opts) {
+  opts = opts || {};
+  document.getElementById('appModalTitle').textContent = opts.title || 'Please Confirm';
+  document.getElementById('appModalMessage').textContent = message;
+  document.getElementById('appModalFooter').innerHTML =
+    '<button type="button" class="app-modal-btn-secondary" onclick="_appModalRespond(false)">' + (opts.cancelLabel || 'Cancel') + '</button>' +
+    '<button type="button" class="app-modal-btn-primary" onclick="_appModalRespond(true)">' + (opts.confirmLabel || 'Confirm') + '</button>';
+  _appModalCallback = onConfirm;
+  document.getElementById('appModalOverlay').classList.add('show');
+}
+
+function showAlertModal(message, onClose, opts) {
+  opts = opts || {};
+  document.getElementById('appModalTitle').textContent = opts.title || 'Notice';
+  document.getElementById('appModalMessage').textContent = message;
+  document.getElementById('appModalFooter').innerHTML =
+    '<button type="button" class="app-modal-btn-primary" style="flex:1;" onclick="_appModalRespond(true)">OK</button>';
+  _appModalCallback = onClose || null;
+  document.getElementById('appModalOverlay').classList.add('show');
+}
+
+function _appModalRespond(confirmed) {
+  document.getElementById('appModalOverlay').classList.remove('show');
+  var cb = _appModalCallback;
+  _appModalCallback = null;
+  if (confirmed && typeof cb === 'function') cb();
+}
+
 window.onload = function() {
   var urlParams = new URLSearchParams(window.location.search);
   var vidParam  = urlParams.get('vid') || sessionStorage.getItem('dka_id');
@@ -17,7 +49,10 @@ window.onload = function() {
   document.getElementById('eventDate').min = today;
 
   callApi('getCurrentVenueById', [vidParam]).then(function(venue) {
-    if (!venue) { alert('Session expired. Please log in again.'); window.location.href = 'index.html'; return; }
+    if (!venue) {
+      showAlertModal('Session expired. Please log in again.', function() { window.location.href = 'index.html'; });
+      return;
+    }
     venueId = venue.id;
 
     if (venue.preferredGenres) {
@@ -41,8 +76,7 @@ window.onload = function() {
       document.getElementById('minRating').value = venue.minBandRating;
     }
   }).catch(function(e) {
-    alert('Error loading venue: ' + e.message);
-    window.location.href = 'index.html';
+    showAlertModal('Error loading venue: ' + e.message, function() { window.location.href = 'index.html'; });
   });
 };
 
@@ -225,22 +259,26 @@ function requestBooking(bandId, eventDate) {
   var btn = document.getElementById('reqBtn-' + bandId);
   if (btn && btn.classList.contains('sent')) return;
 
-  if (!confirm('Request booking for ' + band.name + ' on ' + eventDate + '?\n\nThis will notify your booking agent to confirm the date.')) return;
+  showConfirmModal(
+    'Request booking for ' + band.name + ' on ' + eventDate + '?\n\nThis will notify your booking agent to confirm the date.',
+    function() {
+      if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
 
-  if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
-
-  var venueName = (window._venueName) || 'Your Venue';
-  callApi('api_sendBandRequest', [venueId, venueName, String(bandId), band.name, eventDate, '']).then(function(r) {
-    if (btn) {
-      btn.disabled = false;
-      btn.textContent = '&#10003; Requested';
-      btn.classList.add('sent');
-    }
-    alert('Booking request sent! Your booking agent will be in touch to confirm.');
-  }).catch(function(err) {
-    if (btn) { btn.disabled = false; btn.textContent = 'Request Booking'; }
-    alert('Error sending request: ' + err.message);
-  });
+      var venueName = (window._venueName) || 'Your Venue';
+      callApi('api_sendBandRequest', [venueId, venueName, String(bandId), band.name, eventDate, '']).then(function(r) {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = '&#10003; Requested';
+          btn.classList.add('sent');
+        }
+        showAlertModal('Booking request sent! Your booking agent will be in touch to confirm.');
+      }).catch(function(err) {
+        if (btn) { btn.disabled = false; btn.textContent = 'Request Booking'; }
+        showAlertModal('Error sending request: ' + err.message);
+      });
+    },
+    { title: 'Request Booking', confirmLabel: 'Send Request' }
+  );
 }
 
 function goBackToCalendar() {
