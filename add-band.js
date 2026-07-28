@@ -15,6 +15,17 @@ var agentId = sessionStorage.getItem('dka_id');
   }
 })();
 
+// If we were sent here from Create Booking (via the "+ New Band" button),
+// send the user back there with the new band pre-selected instead of the
+// normal dashboard redirect.
+var _returnTo = new URLSearchParams(window.location.search).get('returnTo') || '';
+var _returnUrl = _returnTo === 'create-booking' ? 'create-booking.html' : '';
+
+if (_returnUrl) {
+  var topbarBtn = document.querySelector('.btn-topbar');
+  if (topbarBtn) topbarBtn.textContent = '\u2190 Back to Booking';
+}
+
 function toggleRoster() {
   var checked = document.getElementById('onRoster').checked;
   var wrap    = document.getElementById('rosterWrap');
@@ -137,7 +148,15 @@ async function handleSubmit(event) {
     document.getElementById('loading').style.display = 'none';
     document.getElementById('successMsg').style.display = 'block';
     window.scrollTo(0, 0);
-    setTimeout(goToDashboard, 2000);
+    if (_returnUrl) {
+      var successText = document.querySelector('#successMsg span');
+      if (successText) successText.textContent = 'Returning to your booking in 2 seconds…';
+      setTimeout(function() {
+        window.location.href = _returnUrl + '?returnBand=' + encodeURIComponent(bandData.bandName);
+      }, 1500);
+    } else {
+      setTimeout(goToDashboard, 2000);
+    }
   } catch (error) {
     document.getElementById('loading').style.display     = 'none';
     document.getElementById('addBandForm').style.display = 'block';
@@ -173,5 +192,11 @@ function addAnother() {
 }
 
 function goToDashboard() {
+  if (_returnUrl) {
+    var justAdded = document.getElementById('successMsg').style.display === 'block';
+    var bandNameVal = (document.getElementById('bandName') || {}).value || '';
+    window.location.href = _returnUrl + (justAdded && bandNameVal ? '?returnBand=' + encodeURIComponent(bandNameVal) : '');
+    return;
+  }
   window.location.href = 'agent-dashboard.html';
 }
