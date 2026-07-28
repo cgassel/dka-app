@@ -279,15 +279,48 @@ function deleteFromView() {
   vDelete(viewIdx);
 }
 
+// Custom in-page modal — replaces alert()/confirm(), which are unreliable
+// inside native app wrappers (especially iOS WKWebView).
+var _appModalCallback = null;
+
+function showConfirmModal(message, onConfirm, opts) {
+  opts = opts || {};
+  document.getElementById('appModalTitle').textContent = opts.title || 'Please Confirm';
+  document.getElementById('appModalMessage').textContent = message;
+  document.getElementById('appModalFooter').innerHTML =
+    '<button type="button" class="app-modal-btn-secondary" onclick="_appModalRespond(false)">' + (opts.cancelLabel || 'Cancel') + '</button>' +
+    '<button type="button" class="app-modal-btn-primary" onclick="_appModalRespond(true)">' + (opts.confirmLabel || 'Confirm') + '</button>';
+  _appModalCallback = onConfirm;
+  document.getElementById('appModalOverlay').classList.add('show');
+}
+
+function showAlertModal(message, onClose, opts) {
+  opts = opts || {};
+  document.getElementById('appModalTitle').textContent = opts.title || 'Notice';
+  document.getElementById('appModalMessage').textContent = message;
+  document.getElementById('appModalFooter').innerHTML =
+    '<button type="button" class="app-modal-btn-primary" style="flex:1;" onclick="_appModalRespond(true)">OK</button>';
+  _appModalCallback = onClose || null;
+  document.getElementById('appModalOverlay').classList.add('show');
+}
+
+function _appModalRespond(confirmed) {
+  document.getElementById('appModalOverlay').classList.remove('show');
+  var cb = _appModalCallback;
+  _appModalCallback = null;
+  if (confirmed && typeof cb === 'function') cb();
+}
+
 function vDelete(i) {
   var v = filteredVenues[i]; if (!v) return;
-  if (!confirm('Delete ' + v.name + '? This cannot be undone.')) return;
-  callApi('api_deleteVenue', [v.id]).then(function() {
-    allVenues = allVenues.filter(function(x) { return x.id !== v.id; });
-    stats(); filter();
-  }).catch(function(err) {
-    alert('Error deleting venue: ' + err.message);
-  });
+  showConfirmModal('Delete ' + v.name + '? This cannot be undone.', function() {
+    callApi('api_deleteVenue', [v.id]).then(function() {
+      allVenues = allVenues.filter(function(x) { return x.id !== v.id; });
+      stats(); filter();
+    }).catch(function(err) {
+      showAlertModal('Error deleting venue: ' + err.message);
+    });
+  }, { title: 'Delete Venue', confirmLabel: 'Delete' });
 }
 
 function addVenue()      { window.location.href = 'add-venue.html'; }
