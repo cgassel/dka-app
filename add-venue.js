@@ -6,6 +6,7 @@
 
 var geocodeTimeout = null;
 var agentId = sessionStorage.getItem('dka_id');
+var isSubmitting = false;
 
 (function checkSession() {
   if (!sessionStorage.getItem('dka_role') || !agentId) {
@@ -147,6 +148,7 @@ function collectPreferences() {
 
 async function handleSubmit(event) {
   event.preventDefault();
+  if (isSubmitting) return false;
 
   var genres = document.querySelectorAll('[name="genres"]:checked');
   if (genres.length === 0) {
@@ -157,10 +159,15 @@ async function handleSubmit(event) {
     return false;
   }
 
+  isSubmitting = true;
+  var submitBtn = document.getElementById('submitBtn');
+  if (submitBtn) submitBtn.disabled = true;
+
   document.getElementById('successMsg').style.display = 'none';
   document.getElementById('errorMsg').style.display   = 'none';
   document.getElementById('addVenueForm').style.display = 'none';
   document.getElementById('loading').style.display   = 'block';
+  window.scrollTo(0, 0);
 
   var prefs = collectPreferences();
 
@@ -198,6 +205,8 @@ async function handleSubmit(event) {
     window.scrollTo(0, 0);
     setTimeout(goToDashboard, 2000);
   } catch (error) {
+    isSubmitting = false;
+    if (submitBtn) submitBtn.disabled = false;
     document.getElementById('loading').style.display = 'none';
     document.getElementById('addVenueForm').style.display = 'block';
     document.getElementById('errorMsg').style.display = 'block';
