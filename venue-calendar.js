@@ -184,7 +184,7 @@ function renderCal() {
   var schedDows=getSchedDows();
   var h='<div class="cal-grid">';
   ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].forEach(function(d){
-    h+='<div class="cal-hdr">'+d+'</div>';
+    h+='<div class="cal-hdr"><span class="hdr-full">'+d+'</span><span class="hdr-abbr">'+d.substring(0,3)+'</span></div>';
   });
 
   var prevDim=new Date(calYear,calMonth,0).getDate();
