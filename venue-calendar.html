@@ -79,10 +79,13 @@
     .cal-wrap { background:var(--card); border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08); overflow-x:auto; padding:16px; }
     .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; min-width:820px; }
     .cal-hdr  { padding:12px; text-align:center; font-family:'Inter',sans-serif; font-weight:700; font-size:0.85rem; text-transform:uppercase; background:var(--bronze2); color:white; }
-    .cal-day  { min-height:105px; padding:7px; border:1px solid #eeeeee; background:var(--card); }
-    .cal-day.other  { background:#fafafa; color:#ccc; }
+    .cal-day  { min-height:105px; padding:7px; border:1px solid #eeeeee; background:var(--card); cursor:pointer; transition:background 0.15s; }
+    .cal-day:hover { background:#f5f0e6; }
+    .cal-day.other  { background:#fafafa; color:#ccc; cursor:default; }
+    .cal-day.other:hover { background:#fafafa; }
     .cal-day.today  { background:#e3f2fd; border:2px solid #2196f3; }
     .cal-day.sched-day { border-left:4px solid #7b1fa2; background:#fdf6ff; }
+    .cal-day.selected { outline:3px solid var(--bronze2); outline-offset:-3px; background:var(--bronze-bg); }
     .day-num  { font-family:'Inter',sans-serif; font-weight:700; font-size:1rem; margin-bottom:3px; }
     .sched-label { display:inline-block; background:#ede7f6; color:#4a148c; font-size:0.6rem; font-weight:800; padding:1px 5px; border-radius:4px; margin-bottom:3px; text-transform:uppercase; letter-spacing:0.4px; }
     .sched-time  { display:block; font-size:0.6rem; color:#6a1b9a; font-weight:600; margin-bottom:2px; }
@@ -94,6 +97,42 @@
     .bk-chip.pending   { background:var(--bronze1); }
     .bk-chip.tentative { background:#9E9E9E; }
     .bk-chip.cancelled { background:var(--red); text-decoration:line-through; }
+
+    .day-detail-panel {
+      max-height:0; overflow:hidden; opacity:0;
+      background:var(--card); border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08);
+      transition:max-height 0.3s ease, opacity 0.25s ease, padding 0.3s ease, margin 0.3s ease;
+    }
+    .day-detail-panel.open {
+      max-height:600px; opacity:1; padding:18px 20px; margin-top:2px;
+      border-left:4px solid var(--bronze2); overflow-y:auto;
+    }
+    .day-panel-hdr { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+    .day-panel-hdr h3 { font-family:'Inter',sans-serif; font-size:1.05rem; font-weight:800; color:var(--bronze3); }
+    .day-panel-close { background:none; border:none; font-size:1.2rem; color:#999; cursor:pointer; padding:2px 6px; line-height:1; }
+    .day-panel-close:hover { color:var(--red); }
+    .day-panel-empty { font-size:0.88rem; color:#999; font-style:italic; margin-bottom:16px; }
+    .day-panel-bookings { display:flex; flex-direction:column; gap:8px; margin-bottom:16px; }
+    .day-panel-booking-row {
+      display:flex; align-items:center; gap:10px; padding:10px 12px;
+      background:var(--card2); border-radius:8px; cursor:pointer; transition:background 0.15s;
+    }
+    .day-panel-booking-row:hover { background:var(--bronze-bg); }
+    .day-panel-band { flex:1; font-weight:700; color:#333; font-size:0.9rem; }
+    .day-panel-time { font-size:0.8rem; color:#777; font-family:'JetBrains Mono',monospace; }
+    .day-panel-status { font-size:0.7rem; font-weight:800; text-transform:uppercase; letter-spacing:0.4px; padding:3px 9px; border-radius:10px; }
+    .day-panel-status.confirmed { background:var(--green-bg); color:var(--green); }
+    .day-panel-status.pending   { background:var(--bronze-bg); color:var(--bronze2); }
+    .day-panel-status.tentative { background:#eee; color:#777; }
+    .day-panel-status.cancelled { background:var(--red-bg); color:var(--red); }
+    .day-panel-book-btn {
+      display:flex; align-items:center; justify-content:center; gap:8px; width:100%;
+      padding:13px 20px; border:none; border-radius:10px; cursor:pointer;
+      background:linear-gradient(160deg,#3a2608 0%,#6a4a10 10%,#a07020 20%,#d4a030 30%,#f0c050 42%,#e8b838 50%,#c08820 60%,#906010 70%,#6a4810 82%,#4a3008 90%,#2e1e06 100%);
+      color:#111008; font-family:'Inter',sans-serif; font-size:0.9rem; font-weight:700;
+      letter-spacing:1px; text-transform:uppercase; transition:all 0.2s;
+    }
+    .day-panel-book-btn:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(46,92,153,0.3); }
 
     .gcal-wrap { max-width:640px; display:flex; flex-direction:column; gap:18px; }
     .gcal-card { background:var(--card); border-radius:14px; box-shadow:0 2px 12px rgba(0,0,0,0.08); overflow:hidden; }
@@ -408,6 +447,14 @@
       .s-card { flex-direction: column; padding: 14px 16px; }
       .s-score { flex-direction: row; gap: 8px; align-items: baseline; }
       .sugg-intro { padding: 14px 16px; }
+
+      .day-detail-panel.open { padding: 14px 14px; }
+      .day-panel-hdr h3 { font-size: 0.92rem; }
+      .day-panel-band { font-size: 0.82rem; }
+      .day-panel-time { font-size: 0.72rem; }
+      .day-panel-status { font-size: 0.62rem; padding: 2px 7px; }
+      .day-panel-booking-row { flex-wrap: wrap; padding: 8px 10px; }
+      .day-panel-book-btn { font-size: 0.8rem; padding: 12px 16px; }
     }
 
     .app-modal-overlay { display:none; position:fixed; inset:0; background:rgba(20,15,5,0.55); z-index:2000; align-items:flex-start; justify-content:center; padding:60px 16px; overflow-y:auto; }
@@ -512,6 +559,8 @@
     <div class="cal-wrap" id="calWrap">
       <div class="loading-block"><div class="spinner"></div><p>Loading…</p></div>
     </div>
+
+    <div class="day-detail-panel" id="dayDetailPanel"></div>
 
   </div>
 
