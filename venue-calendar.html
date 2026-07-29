@@ -27,7 +27,9 @@
       --radius:12px; --nav-h:48px;
     }
     * { margin:0; padding:0; box-sizing:border-box; }
-    body { font-family:'Inter',sans-serif; background:var(--bg); color:#333; height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+    html { overflow-x: hidden; max-width: 100vw; }
+    body { font-family:'Inter',sans-serif; background:var(--bg); color:#333; height:100vh; display:flex; flex-direction:column; overflow:hidden; max-width:100vw; }
+    .topbar, .sub-nav, .tab-bar, .stats-row, .main, .tab-pane { min-width: 0; }
 
     .btn { padding:8px 16px; border:none; border-radius:7px; font-family:'Inter',sans-serif; font-size:0.9rem; font-weight:700; letter-spacing:1px; text-transform:uppercase; cursor:pointer; transition:all 0.18s; white-space:nowrap; }
     .btn-primary { background:linear-gradient(160deg,#3a2608 0%,#6a4a10 10%,#a07020 20%,#d4a030 30%,#f0c050 42%,#e8b838 50%,#c08820 60%,#906010 70%,#6a4810 82%,#4a3008 90%,#2e1e06 100%); color:#111008; }
@@ -85,6 +87,8 @@
     .sched-label { display:inline-block; background:#ede7f6; color:#4a148c; font-size:0.6rem; font-weight:800; padding:1px 5px; border-radius:4px; margin-bottom:3px; text-transform:uppercase; letter-spacing:0.4px; }
     .sched-time  { display:block; font-size:0.6rem; color:#6a1b9a; font-weight:600; margin-bottom:2px; }
     .bk-chip { color:white; padding:3px 6px; margin:2px 0; border-radius:4px; font-size:0.72rem; font-weight:600; cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block; transition:filter 0.15s; }
+    .hdr-abbr { display:none; }
+    .tab-abbr { display:none; }
     .bk-chip:hover { filter:brightness(0.88); }
     .bk-chip.confirmed { background:var(--green); }
     .bk-chip.pending   { background:var(--bronze1); }
@@ -349,29 +353,51 @@
       .brand-sub { font-size: 0.56rem; }
 
       .sub-nav { padding: 6px 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; justify-content: stretch; }
-      .btn-subnav { padding: 8px 6px; font-size: 0.66rem; letter-spacing: 0.5px; width: 100%; }
+      .btn-subnav { padding: 8px 4px; font-size: 0.62rem; letter-spacing: 0.3px; width: 100%; text-align: center; }
 
       .no-sched-banner, .no-prefs-banner, .match-banner {
-        flex-direction: column; align-items: flex-start; padding: 12px 14px; gap: 8px;
+        flex-direction: column; align-items: flex-start; padding: 10px 12px; gap: 6px;
       }
+      .no-sched-banner > div:first-child, .no-prefs-banner > div:first-child, .banner-icon { font-size: 1.1rem !important; }
       .no-sched-banner button, .no-prefs-banner button, .match-banner .banner-btns { width: 100%; }
       .match-banner .banner-btns { display: flex; gap: 8px; }
-      .match-banner .banner-btns button { flex: 1; }
-      .no-sched-banner p, .no-prefs-banner p { font-size: 0.82rem; }
-      .banner-text { font-size: 0.84rem; }
+      .match-banner .banner-btns button { flex: 1; padding: 7px 10px; font-size: 0.76rem; }
+      .no-sched-banner p, .no-prefs-banner p { font-size: 0.76rem; line-height: 1.4; }
+      .no-sched-banner p strong, .no-prefs-banner p strong { font-size: 0.8rem; }
+      .banner-text { font-size: 0.76rem; }
+      .banner-text strong { font-size: 0.86rem; }
 
-      .tab { padding: 10px 12px; font-size: 0.72rem; letter-spacing: 0.5px; }
-      .tab-pane { padding: 12px; gap: 12px; }
+      .tab-bar { overflow-x: visible; }
+      .tab { padding: 9px 4px; font-size: 0.62rem; letter-spacing: 0; flex: 1; text-align: center; white-space: normal; line-height: 1.25; }
+      .tab-full { display: none; }
+      .tab-abbr { display: inline; }
+      .tab .badge { display: block; margin: 2px auto 0; width: fit-content; }
+      .tab-pane { padding: 10px; gap: 10px; }
 
-      .stats-row { flex-wrap: nowrap; overflow-x: auto; gap: 6px; padding-bottom: 2px; margin: 0 -12px; padding-left: 12px; padding-right: 12px; }
+      .stats-row { flex-wrap: nowrap; overflow-x: auto; gap: 6px; padding-bottom: 2px; margin: 0 -10px; padding-left: 10px; padding-right: 10px; }
       .stat-card { padding: 6px 12px; flex-shrink: 0; }
       .stat-val { font-size: 0.85rem; }
       .stat-lbl { font-size: 0.64rem; }
 
-      .cal-controls { flex-wrap: wrap; gap: 8px; padding: 8px 10px; }
-      .month-lbl { min-width: auto; font-size: 0.85rem; }
+      .cal-controls { flex-wrap: wrap; gap: 6px; padding: 6px 8px; }
+      .month-lbl { min-width: auto; font-size: 0.8rem; }
+      .month-nav button:not(.btn-today) { width: 22px; height: 22px; font-size: 0.75rem; }
+      .btn-today { padding: 3px 9px; font-size: 0.64rem; }
       .cal-legend { display: none; }
-      .cal-wrap { padding: 10px; }
+
+      /* Calendar: fits the screen width instead of scrolling sideways */
+      .cal-wrap { padding: 4px; overflow-x: hidden; }
+      .cal-grid { min-width: 0; gap: 1px; }
+      .cal-hdr { padding: 5px 1px; font-size: 0.58rem; letter-spacing: 0; }
+      .hdr-full { display: none; }
+      .hdr-abbr { display: inline; }
+      .cal-day { min-height: 44px; padding: 2px; }
+      .day-num { font-size: 0.66rem; margin-bottom: 1px; }
+      .sched-label { font-size: 0.42rem; padding: 0 2px; margin-bottom: 1px; letter-spacing: 0; }
+      .sched-time { display: none; }
+      .bk-chip { font-size: 0.44rem; padding: 1px 2px; margin: 1px 0; border-radius: 2px; }
+      .gcal-evt-chip { font-size: 0.42rem !important; padding: 1px 2px !important; }
+
       .gcal-wrap { max-width: 100%; }
       .gcal-hdr { padding: 16px 18px; }
       .gcal-body { padding: 16px 18px; }
@@ -452,9 +478,9 @@
 </div>
 
 <div class="tab-bar">
-  <div class="tab active" id="tab-calendar"    onclick="switchTab('calendar')">&#128197; Bookings Calendar</div>
-  <div class="tab"        id="tab-gcal"        onclick="switchTab('gcal')">&#128279; Google Calendar</div>
-  <div class="tab"        id="tab-suggestions" onclick="switchTab('suggestions')">&#10024; Band Suggestions<span class="badge" id="suggBadge" style="display:none;"></span></div>
+  <div class="tab active" id="tab-calendar"    onclick="switchTab('calendar')">&#128197; <span class="tab-full">Bookings Calendar</span><span class="tab-abbr">Bookings</span></div>
+  <div class="tab"        id="tab-gcal"        onclick="switchTab('gcal')">&#128279; <span class="tab-full">Google Calendar</span><span class="tab-abbr">Google Cal</span></div>
+  <div class="tab"        id="tab-suggestions" onclick="switchTab('suggestions')">&#10024; <span class="tab-full">Band Suggestions</span><span class="tab-abbr">Suggestions</span><span class="badge" id="suggBadge" style="display:none;"></span></div>
 </div>
 
 <div class="main">
