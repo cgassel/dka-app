@@ -73,3 +73,55 @@ document.addEventListener('visibilitychange', function () {
     window.location.href = 'index.html';
   }
 });
+
+// ============================================================================
+// Require sign-in again after 10 minutes with no user activity.
+//
+// Tracks the last time the user interacted with the page (tap, scroll, key
+// press) in sessionStorage, so the timer survives navigating between pages.
+// A periodic check compares that against the current time and signs the
+// user out once the limit is passed — this covers the case where the app
+// stays open and visible (so the backgrounding check above never fires) but
+// the person has simply stopped using it, e.g. the phone is face-up on a
+// table with the screen still on.
+// ============================================================================
+(function () {
+  var IDLE_LIMIT_MS = 10 * 60 * 1000; // 10 minutes
+  var CHECK_INTERVAL_MS = 15 * 1000;  // check every 15s
+  var THROTTLE_MS = 5 * 1000;         // don't write to storage more than this often
+  var lastWrite = 0;
+
+  function markActive() {
+    if (!sessionStorage.getItem('dka_role')) return;
+    var now = Date.now();
+    if (now - lastWrite < THROTTLE_MS) return;
+    lastWrite = now;
+    sessionStorage.setItem('dka_last_activity', String(now));
+  }
+
+  function checkIdle() {
+    if (!sessionStorage.getItem('dka_role')) return;
+    var last = parseInt(sessionStorage.getItem('dka_last_activity') || '0', 10);
+    if (!last) { markActive(); return; }
+    if (Date.now() - last >= IDLE_LIMIT_MS) {
+      sessionStorage.removeItem('dka_role');
+      sessionStorage.removeItem('dka_id');
+      sessionStorage.removeItem('dka_backgrounded');
+      sessionStorage.removeItem('dka_last_activity');
+      window.location.href = 'index.html';
+    }
+  }
+
+  ['click', 'touchstart', 'keydown', 'scroll', 'mousemove'].forEach(function (evt) {
+    document.addEventListener(evt, markActive, { passive: true });
+  });
+
+  markActive();
+  setInterval(checkIdle, CHECK_INTERVAL_MS);
+
+  // Also re-check immediately when the tab regains visibility, in case the
+  // browser throttled the interval timer while the page was hidden.
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible') checkIdle();
+  });
+})();
