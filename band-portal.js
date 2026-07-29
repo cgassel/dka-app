@@ -11,6 +11,7 @@ today.setHours(0,0,0,0);
 var gigYear  = today.getFullYear();
 var gigMonth = today.getMonth();
 var allBookings  = [];
+var selectedGigDate = null;
 var bandId   = null;
 var gcalEvents   = [];
 
@@ -129,7 +130,7 @@ function renderGigCalendar() {
 
   var html = '<div class="calendar">';
   ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].forEach(function(d){
-    html += '<div class="calendar-header">' + d + '</div>';
+    html += '<div class="calendar-header"><span class="hdr-full">' + d + '</span><span class="hdr-abbr">' + d.substring(0,3) + '</span></div>';
   });
 
   var prevDays = new Date(gigYear, gigMonth, 0).getDate();
@@ -139,10 +140,11 @@ function renderGigCalendar() {
   for (var day = 1; day <= daysInMonth; day++) {
     var isToday = (day === today.getDate() && gigMonth === today.getMonth() && gigYear === today.getFullYear());
     var dateStr = gigYear + '-' + pad(gigMonth+1) + '-' + pad(day);
-    html += '<div class="calendar-day' + (isToday ? ' today' : '') + '">';
+    var isSel = (dateStr === selectedGigDate);
+    html += '<div class="calendar-day' + (isToday ? ' today' : '') + (isSel ? ' selected' : '') + '" onclick="selectGigDay(\'' + dateStr + '\')">';
     html += '<div class="day-number">' + day + '</div>';
     allBookings.filter(function(b){ return b.date === dateStr; }).forEach(function(b){
-      html += '<div class="booking-item ' + b.status.toLowerCase() + '" onclick="showBooking(\'' + b.id + '\')">' +
+      html += '<div class="booking-item ' + b.status.toLowerCase() + '" onclick="event.stopPropagation(); showBooking(\'' + b.id + '\')">' +
               esc(b.venueName.substring(0,16)) + '</div>';
     });
     gcalEvents.filter(function(e){ return e.date === dateStr; }).forEach(function(e){
@@ -163,9 +165,67 @@ function renderGigCalendar() {
   document.getElementById('calendarContainer').innerHTML = html;
 }
 
-function previousMonth() { if (--gigMonth < 0) { gigMonth = 11; gigYear--; } gcalEvents = []; renderGigCalendar(); loadGcalEvents(); }
-function nextMonth()      { if (++gigMonth > 11) { gigMonth = 0; gigYear++; }  gcalEvents = []; renderGigCalendar(); loadGcalEvents(); }
-function goToToday()      { gigYear = today.getFullYear(); gigMonth = today.getMonth(); gcalEvents = []; renderGigCalendar(); loadGcalEvents(); }
+function previousMonth() { if (--gigMonth < 0) { gigMonth = 11; gigYear--; } gcalEvents = []; closeDayPanel(); renderGigCalendar(); loadGcalEvents(); }
+function nextMonth()      { if (++gigMonth > 11) { gigMonth = 0; gigYear++; }  gcalEvents = []; closeDayPanel(); renderGigCalendar(); loadGcalEvents(); }
+function goToToday()      { gigYear = today.getFullYear(); gigMonth = today.getMonth(); gcalEvents = []; closeDayPanel(); renderGigCalendar(); loadGcalEvents(); }
+
+var DOW_NAMES_BP = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+function selectGigDay(dateStr) {
+  selectedGigDate = (selectedGigDate === dateStr) ? null : dateStr;
+  renderGigCalendar();
+
+  var panel = document.getElementById('dayDetailPanel');
+  if (!selectedGigDate) {
+    panel.classList.remove('open');
+    return;
+  }
+
+  var parts = selectedGigDate.split('-');
+  var d = new Date(parseInt(parts[0],10), parseInt(parts[1],10)-1, parseInt(parts[2],10));
+  var friendly = DOW_NAMES_BP[d.getDay()] + ', ' + MONTHS[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+
+  var dayBookings = allBookings.filter(function(b){ return b.date === selectedGigDate; });
+
+  var html = '<div class="day-panel-hdr"><h3>' + esc(friendly) + '</h3><button class="day-panel-close" onclick="closeDayPanel()">&#x2715;</button></div>';
+
+  if (dayBookings.length > 0) {
+    html += '<div class="day-panel-bookings">';
+    dayBookings.forEach(function(b) {
+      var time = b.startTime ? cleanTimeStr(b.startTime) + (b.endTime ? '&#8211;' + cleanTimeStr(b.endTime) : '') : '';
+      html += '<div class="day-panel-booking-row" onclick="showBooking(\''+b.id+'\')">' +
+        '<span class="day-panel-venue">' + esc(b.venueName) + '</span>' +
+        (time ? '<span class="day-panel-time">' + time + '</span>' : '') +
+        '<span class="day-panel-status ' + esc((b.status||'').toLowerCase()) + '">' + esc(b.status||'') + '</span>' +
+      '</div>';
+    });
+    html += '</div>';
+  } else {
+    html += '<p class="day-panel-empty">No gigs booked on this date.</p>';
+  }
+
+  html += '<button class="day-panel-book-btn" onclick="goManageAvailability()">&#9989; Update My Availability</button>';
+
+  panel.innerHTML = html;
+  panel.classList.add('open');
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function closeDayPanel() {
+  selectedGigDate = null;
+  var panel = document.getElementById('dayDetailPanel');
+  if (panel) panel.classList.remove('open');
+}
+
+function goManageAvailability() {
+  if (selectedGigDate) {
+    var parts = selectedGigDate.split('-');
+    availYear  = parseInt(parts[0], 10);
+    availMonth = parseInt(parts[1], 10) - 1;
+  }
+  switchTab('availability');
+  renderAvailCalendar();
+}
 
 function showBooking(bookingId) {
   var b = allBookings.find(function(x){ return x.id == bookingId; });
@@ -411,6 +471,19 @@ function showToast(msg, type) {
 
 function pad(n) { return n < 10 ? '0' + n : String(n); }
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function cleanTimeStr(t) {
+  if (!t) return '';
+  var s = String(t);
+  if (s.indexOf('1899') !== -1 || s.indexOf('GMT') !== -1) {
+    var m = s.match(/(\d{1,2}):(\d{2})/);
+    if (m) { var h=parseInt(m[1]),mn=m[2],ap=h>=12?'PM':'AM'; h=h%12||12; return h+':'+mn+' '+ap; }
+    return '';
+  }
+  var m2 = s.match(/^(\d{1,2}):(\d{2})/);
+  if (m2) { var h2=parseInt(m2[1]),mn2=m2[2],ap2=h2>=12?'PM':'AM'; h2=h2%12||12; return h2+':'+mn2+' '+ap2; }
+  return s;
+}
 
 function logout() {
   callApi('logoutBand', []).finally(function() {
