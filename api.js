@@ -49,3 +49,27 @@ async function callApi(action, args = []) {
     throw err;
   }
 }
+
+// ============================================================================
+// Require sign-in again after the app is backgrounded and resumed.
+//
+// This only fires on a genuine hidden -> visible cycle on the SAME loaded
+// page (i.e. the user minimized the app / switched away and came back).
+// It deliberately does NOT act just because the page starts hidden or
+// happens to load already visible, which keeps it from misfiring during:
+//   - normal in-app navigation (clicking any nav button/link fully unloads
+//     the current page and loads a new one — the new page never receives a
+//     "became visible again" transition, since it's a fresh instance)
+//   - the Google Calendar connect flow (redirects out to Google and back,
+//     which is also a fresh page load, not a resumed instance)
+// ============================================================================
+document.addEventListener('visibilitychange', function () {
+  if (document.visibilityState === 'hidden') {
+    if (sessionStorage.getItem('dka_role')) sessionStorage.setItem('dka_backgrounded', '1');
+  } else if (document.visibilityState === 'visible' && sessionStorage.getItem('dka_backgrounded')) {
+    sessionStorage.removeItem('dka_role');
+    sessionStorage.removeItem('dka_id');
+    sessionStorage.removeItem('dka_backgrounded');
+    window.location.href = 'index.html';
+  }
+});
