@@ -291,6 +291,15 @@
     }
     .btn-subnav:active { transform:translateY(0); }
 
+    .btn-topbar {
+      background:#A07018; color:#fff; border:none; border-radius:7px;
+      font-size:0.72rem; font-weight:700; font-family:'Inter',sans-serif;
+      letter-spacing:1px; text-transform:uppercase; cursor:pointer;
+      padding:5px 12px; transition:all 0.2s; white-space:nowrap;
+      box-shadow:0 2px 6px rgba(80,50,10,0.2);
+    }
+    .btn-topbar:hover { background:#8a6014; transform:translateY(-1px); box-shadow:0 4px 12px rgba(80,50,10,0.3); }
+
     .btn-today {
       background:var(--card2); color:var(--bronze3);
       border:1.5px solid var(--bronze2); padding:4px 12px; border-radius:6px;
@@ -334,21 +343,45 @@
     }
 
     @media (max-width: 640px) {
-      .topbar { padding: 0 14px; height: auto; min-height: 46px; flex-wrap: wrap; padding-top: 6px; padding-bottom: 6px; }
-      .brand-logo { width: 34px; height: 34px; }
-      .tab { padding: 11px 14px; font-size: 0.85rem; }
-      .tab-pane { padding: 14px; }
-      .cal-controls { flex-wrap: wrap; gap: 8px; }
+      .topbar { padding: 0 12px; height: auto; min-height: 44px; flex-wrap: wrap; padding-top: 6px; padding-bottom: 6px; }
+      .brand-logo { width: 30px; height: 30px; }
+      .brand-name { font-size: 0.8rem; }
+      .brand-sub { font-size: 0.56rem; }
+
+      .sub-nav { padding: 6px 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; justify-content: stretch; }
+      .btn-subnav { padding: 8px 6px; font-size: 0.66rem; letter-spacing: 0.5px; width: 100%; }
+
+      .no-sched-banner, .no-prefs-banner, .match-banner {
+        flex-direction: column; align-items: flex-start; padding: 12px 14px; gap: 8px;
+      }
+      .no-sched-banner button, .no-prefs-banner button, .match-banner .banner-btns { width: 100%; }
+      .match-banner .banner-btns { display: flex; gap: 8px; }
+      .match-banner .banner-btns button { flex: 1; }
+      .no-sched-banner p, .no-prefs-banner p { font-size: 0.82rem; }
+      .banner-text { font-size: 0.84rem; }
+
+      .tab { padding: 10px 12px; font-size: 0.72rem; letter-spacing: 0.5px; }
+      .tab-pane { padding: 12px; gap: 12px; }
+
+      .stats-row { flex-wrap: nowrap; overflow-x: auto; gap: 6px; padding-bottom: 2px; margin: 0 -12px; padding-left: 12px; padding-right: 12px; }
+      .stat-card { padding: 6px 12px; flex-shrink: 0; }
+      .stat-val { font-size: 0.85rem; }
+      .stat-lbl { font-size: 0.64rem; }
+
+      .cal-controls { flex-wrap: wrap; gap: 8px; padding: 8px 10px; }
+      .month-lbl { min-width: auto; font-size: 0.85rem; }
       .cal-legend { display: none; }
-      .month-lbl { min-width: auto; }
       .cal-wrap { padding: 10px; }
       .gcal-wrap { max-width: 100%; }
+      .gcal-hdr { padding: 16px 18px; }
+      .gcal-body { padding: 16px 18px; }
       .modal { padding: 18px; }
       .ep-modal { padding: 20px 16px 28px; }
       .ep-row, .ep-row3 { grid-template-columns: 1fr; }
       .ep-footer { flex-direction: column; }
-      .s-card { flex-direction: column; }
+      .s-card { flex-direction: column; padding: 14px 16px; }
       .s-score { flex-direction: row; gap: 8px; align-items: baseline; }
+      .sugg-intro { padding: 14px 16px; }
     }
 
     .app-modal-overlay { display:none; position:fixed; inset:0; background:rgba(20,15,5,0.55); z-index:2000; align-items:flex-start; justify-content:center; padding:60px 16px; overflow-y:auto; }
