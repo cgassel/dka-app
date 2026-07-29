@@ -5,7 +5,7 @@
 // connection since they read/write live booking data.
 // ============================================================================
 
-const CACHE_NAME = 'dka-app-v14';
+const CACHE_NAME = 'dka-app-v15';
 const STATIC_ASSETS = [
   './index.html',
   './api.js',
