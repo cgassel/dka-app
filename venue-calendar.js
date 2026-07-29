@@ -13,6 +13,7 @@ var venueObj   = null;
 var allBookings= [];
 var scheduleObj= {};
 var suggLoaded = false;
+var selectedCalDate = null;
 
 // Custom in-page modal — replaces alert()/confirm(), which are unreliable
 // inside native app wrappers (especially iOS WKWebView).
@@ -195,9 +196,10 @@ function renderCal() {
     var dow =new Date(calYear,calMonth,day).getDay();
     var isTd=day===now.getDate()&&calMonth===now.getMonth()&&calYear===now.getFullYear();
     var isSc=schedDows[dow]!==undefined;
-    var cls ='cal-day'+(isTd?' today':'')+(isSc?' sched-day':'');
+    var isSel=(ds===selectedCalDate);
+    var cls ='cal-day'+(isTd?' today':'')+(isSc?' sched-day':'')+(isSel?' selected':'');
 
-    h+='<div class="'+cls+'"><div class="day-num">'+day+'</div>';
+    h+='<div class="'+cls+'" data-date="'+ds+'" onclick="selectCalDay(\''+ds+'\')"><div class="day-num">'+day+'</div>';
     if(isSc){
       h+='<span class="sched-label">&#9834; Live Music</span>';
       (schedDows[dow]||[]).forEach(function(sl){
@@ -205,7 +207,7 @@ function renderCal() {
       });
     }
     allBookings.filter(function(b){return(b.date||'').substring(0,10)===ds;}).forEach(function(b){
-      h+='<div class="bk-chip '+b.status.toLowerCase()+'" onclick="showBooking(\''+b.id+'\')">'+esc(b.bandName.substring(0,16))+'</div>';
+      h+='<div class="bk-chip '+b.status.toLowerCase()+'" onclick="event.stopPropagation(); showBooking(\''+b.id+'\')">'+esc(b.bandName.substring(0,16))+'</div>';
     });
     gcalEvents.filter(function(e){return e.date===ds;}).forEach(function(e){
       if(!e.isDK){
@@ -223,9 +225,62 @@ function renderCal() {
   document.getElementById('calWrap').innerHTML=h;
 }
 
-function prevMonth(){ if(--calMonth<0){calMonth=11;calYear--;} gcalEvents=[]; renderCal(); loadVenueGcalEvents(); }
-function nextMonth(){ if(++calMonth>11){calMonth=0;calYear++;} gcalEvents=[]; renderCal(); loadVenueGcalEvents(); }
-function gotoToday(){ calYear=now.getFullYear(); calMonth=now.getMonth(); gcalEvents=[]; renderCal(); loadVenueGcalEvents(); }
+function prevMonth(){ if(--calMonth<0){calMonth=11;calYear--;} gcalEvents=[]; closeDayPanel(); renderCal(); loadVenueGcalEvents(); }
+function nextMonth(){ if(++calMonth>11){calMonth=0;calYear++;} gcalEvents=[]; closeDayPanel(); renderCal(); loadVenueGcalEvents(); }
+function gotoToday(){ calYear=now.getFullYear(); calMonth=now.getMonth(); gcalEvents=[]; closeDayPanel(); renderCal(); loadVenueGcalEvents(); }
+
+var DOW_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+function selectCalDay(dateStr) {
+  selectedCalDate = (selectedCalDate === dateStr) ? null : dateStr;
+  renderCal();
+
+  var panel = document.getElementById('dayDetailPanel');
+  if (!selectedCalDate) {
+    panel.classList.remove('open');
+    return;
+  }
+
+  var parts = selectedCalDate.split('-');
+  var d = new Date(parseInt(parts[0],10), parseInt(parts[1],10)-1, parseInt(parts[2],10));
+  var friendly = DOW_NAMES[d.getDay()] + ', ' + MONTHS[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+
+  var dayBookings = allBookings.filter(function(b){ return (b.date||'').substring(0,10) === selectedCalDate; });
+
+  var html = '<div class="day-panel-hdr"><h3>' + esc(friendly) + '</h3><button class="day-panel-close" onclick="closeDayPanel()">&#x2715;</button></div>';
+
+  if (dayBookings.length > 0) {
+    html += '<div class="day-panel-bookings">';
+    dayBookings.forEach(function(b) {
+      var time = b.startTime ? cleanTime(b.startTime) + (b.endTime ? '&#8211;' + cleanTime(b.endTime) : '') : '';
+      html += '<div class="day-panel-booking-row" onclick="showBooking(\''+b.id+'\')">' +
+        '<span class="day-panel-band">' + esc(b.bandName) + '</span>' +
+        (time ? '<span class="day-panel-time">' + time + '</span>' : '') +
+        '<span class="day-panel-status ' + esc((b.status||'').toLowerCase()) + '">' + esc(b.status||'') + '</span>' +
+      '</div>';
+    });
+    html += '</div>';
+  } else {
+    html += '<p class="day-panel-empty">No bookings yet on this date.</p>';
+  }
+
+  html += '<button class="day-panel-book-btn" onclick="goBookThisDate()">&#127925; Request a Band for This Date</button>';
+
+  panel.innerHTML = html;
+  panel.classList.add('open');
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function closeDayPanel() {
+  selectedCalDate = null;
+  var panel = document.getElementById('dayDetailPanel');
+  if (panel) panel.classList.remove('open');
+}
+
+function goBookThisDate() {
+  if (!selectedCalDate) return;
+  window.location.href = 'venue-booking-request.html?date=' + encodeURIComponent(selectedCalDate);
+}
 
 function cleanTime(t) {
   if (!t) return '';
