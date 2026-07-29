@@ -48,6 +48,9 @@ window.onload = function() {
   var today = new Date().toISOString().split('T')[0];
   document.getElementById('eventDate').min = today;
 
+  var dateParam = urlParams.get('date');
+  if (dateParam) document.getElementById('eventDate').value = dateParam;
+
   callApi('getCurrentVenueById', [vidParam]).then(function(venue) {
     if (!venue) {
       showAlertModal('Session expired. Please log in again.', function() { window.location.href = 'index.html'; });
