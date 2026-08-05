@@ -80,6 +80,8 @@ function renderTable() {
     var statusBadge;
     if (st === 'signed') {
       statusBadge = '<span class="badge badge-signed">&#x2705; Fully Signed</span>';
+    } else if (st === 'pending review') {
+      statusBadge = '<span class="badge badge-sent" style="background:#fff3e0;color:#e65100;border-color:#ffcc80;">&#x1F4CB; Pending Review</span>';
     } else if (st === 'awaiting band') {
       statusBadge = '<span class="badge badge-sent">&#x23F3; Awaiting Band</span>';
     } else if (st === 'awaiting venue') {
