@@ -550,6 +550,7 @@ async function _submitBooking(pct) {
     isSubmitting = false;
 
     var sendCon = document.getElementById('sendContract');
+    var contractNoteEl = document.getElementById('successContractNote');
     if (sendCon && sendCon.checked && result && result.bookingId) {
       var bandEmail = bookingData.bandEmail || '';
       var perfDate  = '';
@@ -560,6 +561,8 @@ async function _submitBooking(pct) {
         var ta = document.getElementById('contractTextarea');
         contractText = ta ? ta.value : '';
       }
+
+      if (contractNoteEl) contractNoteEl.textContent = 'Your contract has been sent to a Contract Agent for review before it goes out to the band and venue.';
 
       if (_contractMode === 'standard' || !contractText) {
         var bkDataForContract = {
@@ -576,13 +579,15 @@ async function _submitBooking(pct) {
         };
         callApi('api_generateContractText', [bkDataForContract, null]).then(function(genResult) {
           var text = (genResult && genResult.text) ? genResult.text : '';
-          if (text && bandEmail) {
-            callApi('api_sendContract', [result.bookingId, text, bandEmail, bookingData.bandName, bookingData.venueName, perfDate, bookingData.agentId || '']).catch(function(){});
+          if (text) {
+            callApi('api_createContractForReview', [result.bookingId, text, bandEmail, bookingData.bandName, bookingData.venueName, perfDate, bookingData.agentId || '']).catch(function(){});
           }
         }).catch(function(){});
-      } else if (contractText && bandEmail) {
-        callApi('api_sendContract', [result.bookingId, contractText, bandEmail, bookingData.bandName, bookingData.venueName, perfDate, bookingData.agentId || '']).catch(function(){});
+      } else if (contractText) {
+        callApi('api_createContractForReview', [result.bookingId, contractText, bandEmail, bookingData.bandName, bookingData.venueName, perfDate, bookingData.agentId || '']).catch(function(){});
       }
+    } else if (contractNoteEl) {
+      contractNoteEl.textContent = '';
     }
 
     document.getElementById('loading').style.display    = 'none';
