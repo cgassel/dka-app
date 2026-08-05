@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#A07018">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Gig Matrix">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <title>Contract Review — Gig Matrix</title>
+  <style>
+    :root {
+      --bg:#f0ebe0; --bg2:#e8e0d0; --card:#faf8f4; --card2:#f2ede4;
+      --border:#d4c4a0; --bronze1:#C8960C; --bronze2:#A07018;
+      --bronze3:#7A5210; --bronze4:#5A3C0C; --bronze-bg:rgba(160,112,24,0.1);
+      --text:#1a1408; --muted:#6b5e48; --dim:#a09070;
+      --green:#2e7d5c; --green-bg:rgba(46,125,92,0.1);
+      --red:#8B2000; --red-bg:rgba(139,32,0,0.1);
+      --radius:12px;
+    }
+    * { box-sizing:border-box; }
+    body { font-family:'Inter',sans-serif; margin:0; background:var(--bg); color:var(--text); min-height:100vh; overflow-x:hidden; max-width:100vw; }
+    html { overflow-x:hidden; max-width:100vw; }
+
+    .topbar {
+      background:linear-gradient(160deg,#3a2608 0%,#6a4a10 10%,#a07020 20%,#d4a030 30%,#f0c050 42%,#e8b838 50%,#c08820 60%,#906010 70%,#6a4810 82%,#4a3008 90%,#2e1e06 100%);
+      border-bottom:1px solid rgba(200,150,50,0.2); padding:0 24px;
+      display:flex; align-items:center; justify-content:space-between; height:52px;
+      box-shadow:0 2px 20px rgba(0,0,0,0.25); position:sticky; top:0; z-index:100;
+    }
+    .topbar-brand { display:flex; align-items:center; gap:10px; }
+    .brand-logo { width:38px; height:38px; object-fit:contain; }
+    .brand-text { display:flex; flex-direction:column; gap:1px; }
+    .brand-name { font-size:0.92rem; font-weight:600; color:#f5ead0; letter-spacing:0.3px; }
+    .brand-sub  { font-size:0.62rem; font-weight:400; letter-spacing:1.5px; text-transform:uppercase; color:rgba(240,192,80,0.7); }
+    .topbar-right { display:flex; align-items:center; gap:8px; }
+    .btn-topbar { background:rgba(0,0,0,0.2); color:rgba(245,234,208,0.85); border:1px solid rgba(200,160,60,0.25); padding:6px 14px; border-radius:6px; font-size:0.75rem; font-weight:600; font-family:inherit; letter-spacing:0.5px; cursor:pointer; transition:all 0.2s; white-space:nowrap; }
+    .btn-topbar:hover { border-color:rgba(240,192,80,0.5); color:rgba(240,192,80,1); }
+
+    .main { max-width:900px; margin:0 auto; padding:24px 20px 60px; }
+
+    .queue-banner {
+      display:flex; align-items:center; gap:14px; background:var(--card); border-radius:var(--radius);
+      padding:20px 24px; margin-bottom:24px; box-shadow:0 2px 8px rgba(0,0,0,0.06); border-left:5px solid var(--bronze2);
+    }
+    .queue-banner.empty { border-left-color:var(--green); }
+    .queue-banner-icon { font-size:2rem; flex-shrink:0; }
+    .queue-banner h1 { margin:0 0 2px; font-size:1.3rem; color:var(--bronze3); }
+    .queue-banner p { margin:0; font-size:0.88rem; color:var(--muted); }
+
+    .contract-card {
+      background:var(--card); border-radius:var(--radius); margin-bottom:14px;
+      box-shadow:0 2px 8px rgba(0,0,0,0.06); overflow:hidden; border:1px solid var(--border);
+    }
+    .contract-card-hdr {
+      display:flex; align-items:center; justify-content:space-between; gap:14px;
+      padding:16px 20px; cursor:pointer; transition:background 0.15s;
+    }
+    .contract-card-hdr:hover { background:var(--card2); }
+    .contract-card-title { font-weight:700; font-size:1rem; color:var(--text); }
+    .contract-card-sub { font-size:0.8rem; color:var(--muted); margin-top:2px; }
+    .contract-card-meta { text-align:right; flex-shrink:0; }
+    .contract-card-date { font-size:0.82rem; font-weight:700; color:var(--bronze3); }
+    .contract-card-created { font-size:0.7rem; color:var(--dim); margin-top:2px; }
+    .contract-card-chevron { font-size:0.9rem; color:var(--dim); transition:transform 0.2s; flex-shrink:0; }
+    .contract-card.open .contract-card-chevron { transform:rotate(90deg); }
+
+    .contract-card-body {
+      max-height:0; overflow:hidden; transition:max-height 0.3s ease;
+    }
+    .contract-card.open .contract-card-body { max-height:2000px; }
+    .contract-card-body-inner { padding:0 20px 20px; border-top:1px solid var(--border); }
+
+    .contract-meta-row { display:flex; flex-wrap:wrap; gap:16px; padding:16px 0; font-size:0.82rem; }
+    .contract-meta-item .label { color:var(--dim); font-size:0.68rem; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px; }
+    .contract-meta-item .value { color:var(--text); font-weight:600; }
+    .contract-meta-item .value.missing { color:var(--red); font-weight:500; font-style:italic; }
+
+    .contract-textarea {
+      width:100%; min-height:340px; padding:16px; border:1.5px solid var(--border); border-radius:8px;
+      font-family:'JetBrains Mono',monospace; font-size:0.82rem; line-height:1.6; color:var(--text);
+      background:var(--card2); resize:vertical; margin-bottom:16px;
+    }
+    .contract-textarea:focus { outline:none; border-color:var(--bronze2); background:var(--card); }
+
+    .contract-actions { display:flex; gap:10px; }
+    .btn-approve {
+      flex:2; padding:14px 20px; border:none; border-radius:8px; cursor:pointer;
+      background:var(--bronze2); color:#fff; font-family:'Inter',sans-serif; font-size:0.92rem;
+      font-weight:700; letter-spacing:0.5px; text-transform:uppercase; transition:all 0.2s;
+    }
+    .btn-approve:hover:not(:disabled) { background:#8a6014; transform:translateY(-1px); box-shadow:0 4px 14px rgba(80,50,10,0.3); }
+    .btn-approve:disabled { opacity:0.6; cursor:not-allowed; }
+    .btn-collapse {
+      flex:1; padding:14px 20px; border:1.5px solid var(--border); border-radius:8px; cursor:pointer;
+      background:var(--card); color:var(--muted); font-family:'Inter',sans-serif; font-size:0.85rem; font-weight:600;
+    }
+    .btn-collapse:hover { background:var(--card2); }
+
+    .empty-state { text-align:center; padding:60px 20px; color:var(--dim); }
+    .empty-state-icon { font-size:3rem; margin-bottom:12px; }
+    .loading-block { text-align:center; padding:60px 20px; }
+    .spinner { border:4px solid #f3f3f3; border-top:4px solid var(--bronze2); border-radius:50%; width:44px; height:44px; animation:spin 1s linear infinite; margin:0 auto 14px; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    .toast {
+      position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(100px);
+      background:var(--text); color:#fff; padding:14px 24px; border-radius:10px; font-size:0.88rem;
+      font-weight:600; box-shadow:0 8px 24px rgba(0,0,0,0.25); z-index:2000; opacity:0; transition:all 0.3s;
+      max-width:90vw; text-align:center;
+    }
+    .toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
+    .toast.error { background:var(--red); }
+    .toast.success { background:var(--green); }
+
+    .app-modal-overlay { display:none; position:fixed; inset:0; background:rgba(20,15,5,0.55); z-index:2000; align-items:flex-start; justify-content:center; padding:60px 16px; overflow-y:auto; }
+    .app-modal-overlay.show { display:flex; }
+    .app-modal-card { background:#fff; border-radius:14px; max-width:440px; width:100%; box-shadow:0 12px 40px rgba(0,0,0,0.3); }
+    .app-modal-header { padding:20px 24px 0; }
+    .app-modal-header h2 { margin:0; font-size:1.15rem; color:var(--bronze3); }
+    .app-modal-body { padding:14px 24px 4px; }
+    .app-modal-body p { margin:0; line-height:1.6; color:var(--text); white-space:pre-line; }
+    .app-modal-footer { display:flex; gap:10px; padding:20px 24px 22px; }
+    .app-modal-footer button { flex:1; padding:13px 20px; font-size:0.95rem; border:none; border-radius:8px; font-weight:600; cursor:pointer; }
+    .app-modal-btn-primary { background:var(--bronze2); color:#fff; }
+    .app-modal-btn-secondary { background:#f5f5f5; color:#333; }
+
+    .add-agent-form .form-group { margin-bottom:14px; text-align:left; }
+    .add-agent-form label { display:block; font-size:0.78rem; font-weight:700; color:var(--muted); margin-bottom:4px; }
+    .add-agent-form input { width:100%; padding:10px 12px; border:1.5px solid var(--border); border-radius:7px; font-size:0.9rem; font-family:'Inter',sans-serif; }
+
+    @media (max-width:640px) {
+      .topbar { padding:0 14px; }
+      .brand-logo { width:30px; height:30px; }
+      .brand-name { font-size:0.8rem; }
+      .brand-sub { font-size:0.56rem; }
+      .main { padding:16px 12px 50px; }
+      .queue-banner { padding:16px 18px; gap:10px; }
+      .queue-banner h1 { font-size:1.05rem; }
+      .queue-banner p { font-size:0.78rem; }
+      .contract-card-hdr { padding:14px 14px; }
+      .contract-card-title { font-size:0.88rem; }
+      .contract-card-body-inner { padding:0 14px 16px; }
+      .contract-meta-row { gap:10px; padding:12px 0; }
+      .contract-textarea { min-height:260px; font-size:0.76rem; padding:12px; }
+      .contract-actions { flex-direction:column; }
+      .app-modal-overlay { padding:0; align-items:stretch; }
+      .app-modal-card { max-width:100%; min-height:100%; border-radius:0; display:flex; flex-direction:column; justify-content:center; }
+      .app-modal-footer { flex-direction:column; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="topbar-brand">
+      <img class="brand-logo" src="icons/gm-logo.png" alt="GM">
+      <div class="brand-text">
+        <div class="brand-name">Gig Matrix</div>
+        <div class="brand-sub" id="agentNameLabel">Contract Review</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <button class="btn-topbar" onclick="openAddAgentModal()">+ Add Contract Agent</button>
+      <button class="btn-topbar" onclick="logout()">Sign Out</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div id="queueBanner" class="queue-banner">
+      <div class="queue-banner-icon">&#128203;</div>
+      <div>
+        <h1 id="queueTitle">Loading…</h1>
+        <p id="queueSub">Checking for contracts awaiting review.</p>
+      </div>
+    </div>
+
+    <div id="listContainer">
+      <div class="loading-block">
+        <div class="spinner"></div>
+        <p>Loading pending contracts…</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="app-modal-overlay" id="addAgentModalOverlay">
+    <div class="app-modal-card">
+      <div class="app-modal-header"><h2>Add Contract Agent</h2></div>
+      <div class="app-modal-body">
+        <div class="add-agent-form">
+          <div class="form-group">
+            <label>Name</label>
+            <input type="text" id="newAgentName" placeholder="Jane Smith">
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="newAgentEmail" placeholder="jane@example.com">
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="text" id="newAgentPassword" placeholder="Temporary password">
+          </div>
+        </div>
+      </div>
+      <div class="app-modal-footer">
+        <button type="button" class="app-modal-btn-secondary" onclick="closeAddAgentModal()">Cancel</button>
+        <button type="button" class="app-modal-btn-primary" id="addAgentSubmitBtn" onclick="submitAddAgent()">Add Agent</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="api.js"></script>
+  <script src="contract-review-dashboard.js"></script>
+</body>
+</html>
