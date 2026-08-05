@@ -103,6 +103,7 @@
             <option value="agent">Booking Agent</option>
             <option value="venue">Venue</option>
             <option value="band">Band</option>
+            <option value="contractagent">Contract Agent</option>
             <option value="admin">Administrator</option>
           </select>
         </div>
@@ -152,7 +153,7 @@
         creds.style.display = 'block';
         lbl.textContent = 'Username';
         btn.disabled = false;
-      } else if (t === 'venue' || t === 'band') {
+      } else if (t === 'venue' || t === 'band' || t === 'contractagent') {
         creds.style.display = 'block';
         lbl.textContent = 'Username';
         btn.disabled = false;
@@ -196,6 +197,7 @@
           agent: 'authenticateAgent',
           venue: 'authenticateVenue',
           band:  'authenticateBand',
+          contractagent: 'authenticateContractAgent',
           admin: 'authenticateAdmin'
         };
 
@@ -214,8 +216,8 @@
             window.location.href = 'admin-dashboard.html';
           } else {
             sessionStorage.setItem('dka_role', t);
-            sessionStorage.setItem('dka_id', r.agentId || r.venueId || r.bandId || '');
-            var dashboardPages = { agent: 'agent-dashboard.html', venue: 'venue-calendar.html', band: 'band-portal.html' };
+            sessionStorage.setItem('dka_id', r.agentId || r.venueId || r.bandId || r.contractAgentId || '');
+            var dashboardPages = { agent: 'agent-dashboard.html', venue: 'venue-calendar.html', band: 'band-portal.html', contractagent: 'contract-review-dashboard.html' };
             window.location.href = dashboardPages[t] || (t + '-dashboard.html');
           }
         } else {
