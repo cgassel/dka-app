@@ -73,7 +73,7 @@ async function loadDashboardData() {
     console.error('loadDashboardData error:', err);
   }
 
-  callApi('api_getAgentNotifications', []).then(function(n) {
+  callApi('api_getAgentNotifications', [agentId]).then(function(n) {
     notifData = n || [];
     renderNotifBell();
     renderNotifDrawer();
@@ -312,7 +312,7 @@ function toggleNotifDrawer(){
     setTimeout(function(){
       var ids=notifData.filter(function(n){return!n.isRead;}).map(function(n){return n.id;});
       if(ids.length>0){
-        callApi('api_markNotificationsRead',[ids]).then(function(){
+        callApi('api_markNotificationsRead',[agentId, ids]).then(function(){
           notifData.forEach(function(n){n.isRead=true;});
           renderNotifBell();renderNotifDrawer();
         }).catch(function(){});
@@ -325,7 +325,7 @@ function markAllRead(){
   var ids=notifData.filter(function(n){return!n.isRead;}).map(function(n){return n.id;});
   if(!ids.length)return;
   document.getElementById('markAllBtn').disabled=true;
-  callApi('api_markNotificationsRead',[ids]).then(function(){
+  callApi('api_markNotificationsRead',[agentId, ids]).then(function(){
     notifData.forEach(function(n){n.isRead=true;});
     renderNotifBell();renderNotifDrawer();
   }).catch(function(){});
