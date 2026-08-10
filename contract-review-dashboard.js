@@ -19,6 +19,29 @@ window.onload = function() {
   loadBothQueues();
 };
 
+// Supports links from the "new message" notification email:
+// contract-review-dashboard.html?openContract=X&channel=band|venue|agent
+function _checkDeepLink() {
+  var params = new URLSearchParams(window.location.search);
+  var openContract = params.get('openContract');
+  var channel       = params.get('channel');
+  if (!openContract) return;
+
+  switchQueue('attention');
+  var idx = attentionContracts.findIndex(function(c) {
+    return String(c.contractId) === String(openContract) && (!channel || c.channel === channel);
+  });
+  if (idx !== -1) {
+    toggleAttentionCard(idx);
+  } else {
+    showToast('That conversation is no longer open — it may have already been handled.', 'error');
+  }
+  // Clean the URL so refreshing doesn't re-trigger this.
+  if (window.history && window.history.replaceState) {
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+}
+
 function loadBothQueues() {
   Promise.all([
     callApi('api_getPendingContractReviews', []).catch(function() { return []; }),
@@ -29,6 +52,7 @@ function loadBothQueues() {
     updateTabCounts();
     renderQueueBanner();
     renderList();
+    _checkDeepLink();
   }).catch(function(e) {
     showToast('Error loading contracts: ' + e.message, 'error');
   });
@@ -141,12 +165,13 @@ function renderAttentionList() {
   }
 
   var html = '';
+  var channelLabels = { band: 'Band', venue: 'Venue', agent: 'Booking Agent' };
   attentionContracts.forEach(function(c, idx) {
     html +=
       '<div class="contract-card" id="a-card-' + idx + '">' +
         '<div class="contract-card-hdr" onclick="toggleAttentionCard(' + idx + ')">' +
           '<div>' +
-            '<div class="contract-card-title">' + esc(c.bandName) + ' @ ' + esc(c.venueName) + '</div>' +
+            '<div class="contract-card-title">' + esc(c.bandName) + ' @ ' + esc(c.venueName) + ' <span class="channel-pill">' + esc(channelLabels[c.channel] || c.channel) + '</span></div>' +
             '<div class="contract-card-sub">Booking #' + esc(c.bookingId) + ' &bull; ' + esc(c.status) + '</div>' +
           '</div>' +
           '<div class="contract-card-meta">' +
@@ -196,7 +221,7 @@ function toggleAnyCard(cardId) {
 function loadThread(idx) {
   var c = attentionContracts[idx];
   if (!c) return;
-  callApi('api_getContractMessages', [c.contractId]).then(function(msgs) {
+  callApi('api_getContractMessages', [c.contractId, c.channel]).then(function(msgs) {
     renderThread(idx, msgs || []);
   }).catch(function() {
     document.getElementById('thread-' + idx).innerHTML = '<div class="msg-empty">Couldn\'t load the conversation.</div>';
@@ -205,6 +230,7 @@ function loadThread(idx) {
 
 function renderThread(idx, msgs) {
   var el = document.getElementById('thread-' + idx);
+  var c  = attentionContracts[idx];
   var roleNames = { band: 'Band', venue: 'Venue', agent: 'Booking Agent', contractagent: contractAgentName };
   if (msgs.length === 0) {
     el.innerHTML = '<div class="msg-empty">No messages.</div>';
@@ -235,7 +261,7 @@ async function sendReply(idx) {
   btn.textContent = 'Sending…';
 
   try {
-    await callApi('api_postContractMessage', [c.contractId, 'contractagent', contractAgentName, text]);
+    await callApi('api_postContractMessage', [c.contractId, c.channel, 'contractagent', contractAgentName, text]);
     input.value = '';
     loadThread(idx);
     showToast('Reply sent.', 'success');
