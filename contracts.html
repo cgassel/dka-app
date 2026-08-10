@@ -85,6 +85,22 @@
     .sig-text strong { display:block; font-size:0.95rem; color:#2e7d32; }
     .sig-text span { font-size:0.8rem; color:#555; }
     .unsig-box { background:#fff3e0; border:1.5px solid #ffe082; border-radius:10px; padding:14px 18px; margin-top:14px; font-size:0.85rem; color:#e65100; font-weight:600; }
+
+    .msg-thread { display:flex; flex-direction:column; gap:10px; padding:10px 0; max-height:280px; overflow-y:auto; }
+    .msg-empty { text-align:center; color:var(--dim,#999); font-size:0.85rem; font-style:italic; padding:12px 0; }
+    .msg-bubble { max-width:80%; padding:11px 15px; border-radius:12px; font-size:0.85rem; line-height:1.5; }
+    .msg-bubble.mine { align-self:flex-end; background:#fdf1dc; border:1.5px solid #d4a030; }
+    .msg-bubble.theirs { align-self:flex-start; background:#f2f2f2; border:1.5px solid #ddd; }
+    .msg-bubble.system { align-self:center; background:#eef7f0; border:1px solid #b6dfc0; color:#2e7d32; font-size:0.8rem; font-style:italic; text-align:center; max-width:95%; }
+    .msg-meta { font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:#8a7550; margin-bottom:4px; }
+    .msg-bubble.theirs .msg-meta { color:#777; }
+    .msg-compose { display:flex; gap:8px; padding-top:10px; border-top:1px solid #eee; }
+    .msg-input { flex:1; padding:11px 14px; border:1.5px solid #d4c4a0; border-radius:8px; font-family:'Inter',sans-serif; font-size:0.85rem; resize:vertical; min-height:44px; }
+    .msg-input:focus { outline:none; border-color:#A07018; }
+    .btn-msg-send { padding:0 18px; background:#A07018; color:#fff; border:none; border-radius:8px; font-size:0.82rem; font-weight:700; cursor:pointer; }
+    .btn-msg-send:hover:not(:disabled) { background:#8a6014; }
+    .btn-msg-send:disabled { opacity:0.5; cursor:not-allowed; }
+    @media (max-width:640px) { .msg-compose { flex-direction:column; } .msg-bubble { max-width:92%; } }
     .empty { text-align:center; padding:60px 20px; color:var(--muted); }
     .empty-icon { font-size:3rem; margin-bottom:12px; }
     .loading { text-align:center; padding:50px; }
