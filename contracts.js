@@ -162,7 +162,7 @@ function showContractModal(c) {
 }
 
 function loadModalMessages(contractId) {
-  callApi('api_getContractMessages', [contractId]).then(function(msgs) {
+  callApi('api_getAllContractMessagesForAgent', [contractId]).then(function(msgs) {
     renderModalMessages(msgs || []);
   }).catch(function() {
     var el = document.getElementById('modalMsgThread');
@@ -174,17 +174,18 @@ function renderModalMessages(msgs) {
   var el = document.getElementById('modalMsgThread');
   if (!el) return;
   var roleNames = { band: 'Band', venue: 'Venue', agent: 'You', contractagent: 'Contract Agent' };
+  var channelLabels = { band: 'Band thread', venue: 'Venue thread', agent: 'Your thread' };
   if (msgs.length === 0) {
     el.innerHTML = '<div class="msg-empty">No messages yet. Ask a question below if you need anything changed.</div>';
     return;
   }
   el.innerHTML = msgs.map(function(m) {
     if (m.fromRole === 'contractagent' && m.text.indexOf('Sent a revised contract') === 0) {
-      return '<div class="msg-bubble system">' + esc(m.text) + ' &bull; ' + esc(m.createdAt) + '</div>';
+      return '<div class="msg-bubble system">[' + esc(channelLabels[m.channel] || m.channel) + '] ' + esc(m.text) + ' &bull; ' + esc(m.createdAt) + '</div>';
     }
     var cls = m.fromRole === 'agent' ? 'mine' : 'theirs';
     return '<div class="msg-bubble ' + cls + '">' +
-      '<div class="msg-meta">' + esc(roleNames[m.fromRole] || m.fromRole) + ' &bull; ' + esc(m.createdAt) + '</div>' +
+      '<div class="msg-meta">' + esc(roleNames[m.fromRole] || m.fromRole) + ' &bull; ' + esc(channelLabels[m.channel] || m.channel) + ' &bull; ' + esc(m.createdAt) + '</div>' +
       esc(m.text) +
     '</div>';
   }).join('');
@@ -199,7 +200,7 @@ async function sendModalMessage(contractId) {
   btn.disabled = true;
   btn.textContent = 'Sending…';
   try {
-    await callApi('api_postContractMessage', [contractId, 'agent', 'Booking Agent', text]);
+    await callApi('api_postContractMessage', [contractId, 'agent', 'agent', 'Booking Agent', text]);
     input.value = '';
     var errEl = document.getElementById('modalMsgError');
     if (errEl) errEl.style.display = 'none';
