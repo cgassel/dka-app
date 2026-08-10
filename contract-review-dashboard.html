@@ -101,6 +101,35 @@
     }
     .btn-collapse:hover { background:var(--card2); }
 
+    .queue-tabs { display:flex; gap:8px; margin-bottom:16px; }
+    .queue-tab {
+      flex:1; padding:12px 16px; border:1.5px solid var(--border); border-radius:10px;
+      background:var(--card); color:var(--muted); font-family:'Inter',sans-serif; font-size:0.85rem;
+      font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;
+      transition:all 0.2s;
+    }
+    .queue-tab.active { background:var(--bronze2); color:#fff; border-color:var(--bronze2); }
+    .queue-tab-count {
+      background:rgba(0,0,0,0.15); padding:2px 8px; border-radius:10px; font-size:0.75rem; font-weight:800;
+    }
+    .queue-tab:not(.active) .queue-tab-count.attention { background:var(--red); color:#fff; }
+    .queue-tab:not(.active) .queue-tab-count:not(.attention) { background:var(--bronze-bg); color:var(--bronze3); }
+
+    .msg-thread { display:flex; flex-direction:column; gap:10px; padding:14px 0; max-height:320px; overflow-y:auto; }
+    .msg-empty { text-align:center; color:var(--dim); font-size:0.85rem; font-style:italic; padding:12px 0; }
+    .msg-bubble { max-width:80%; padding:11px 15px; border-radius:12px; font-size:0.85rem; line-height:1.5; }
+    .msg-bubble.mine { align-self:flex-end; background:var(--bronze-bg); border:1.5px solid #d4a030; }
+    .msg-bubble.theirs { align-self:flex-start; background:var(--card2); border:1.5px solid var(--border); }
+    .msg-bubble.system { align-self:center; background:var(--green-bg); border:1px solid #b6dfc0; color:var(--green); font-size:0.78rem; font-style:italic; text-align:center; max-width:95%; }
+    .msg-meta { font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:var(--dim); margin-bottom:4px; }
+    .msg-compose { display:flex; gap:8px; padding-top:10px; border-top:1px solid var(--border); }
+    .msg-input { flex:1; padding:11px 14px; border:1.5px solid var(--border); border-radius:8px; font-family:'Inter',sans-serif; font-size:0.85rem; resize:vertical; min-height:44px; }
+    .msg-input:focus { outline:none; border-color:var(--bronze2); }
+    .btn-msg-send { padding:0 18px; background:var(--bronze2); color:#fff; border:none; border-radius:8px; font-size:0.82rem; font-weight:700; cursor:pointer; }
+    .btn-msg-send:hover:not(:disabled) { background:#8a6014; }
+    .btn-msg-send:disabled { opacity:0.5; cursor:not-allowed; }
+    .revise-label { font-size:0.7rem; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; color:var(--bronze3); margin:18px 0 8px; }
+
     .empty-state { text-align:center; padding:60px 20px; color:var(--dim); }
     .empty-state-icon { font-size:3rem; margin-bottom:12px; }
     .loading-block { text-align:center; padding:60px 20px; }
@@ -148,6 +177,10 @@
       .contract-meta-row { gap:10px; padding:12px 0; }
       .contract-textarea { min-height:260px; font-size:0.76rem; padding:12px; }
       .contract-actions { flex-direction:column; }
+      .queue-tab { font-size:0.72rem; padding:10px 10px; }
+      .msg-bubble { max-width:92%; font-size:0.8rem; }
+      .msg-compose { flex-direction:column; }
+      .btn-msg-send { padding:11px 18px; }
       .app-modal-overlay { padding:0; align-items:stretch; }
       .app-modal-card { max-width:100%; min-height:100%; border-radius:0; display:flex; flex-direction:column; justify-content:center; }
       .app-modal-footer { flex-direction:column; }
@@ -171,6 +204,11 @@
   </div>
 
   <div class="main">
+    <div class="queue-tabs" id="queueTabs">
+      <button class="queue-tab active" id="tabPending" onclick="switchQueue('pending')">New Bookings <span class="queue-tab-count" id="pendingCount">0</span></button>
+      <button class="queue-tab" id="tabAttention" onclick="switchQueue('attention')">Needs Attention <span class="queue-tab-count attention" id="attentionCount">0</span></button>
+    </div>
+
     <div id="queueBanner" class="queue-banner">
       <div class="queue-banner-icon">&#128203;</div>
       <div>
