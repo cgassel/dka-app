@@ -522,6 +522,9 @@ async function _submitBooking(pct) {
   document.getElementById('loading').style.display     = 'block';
   window.scrollTo(0, 0);
 
+  var sendCon = document.getElementById('sendContract');
+  var contractIsPending = !!(sendCon && sendCon.checked);
+
   var bookingData = {
     venueId:       document.getElementById('venue').value,
     venueName:     selectedVenue.name,
@@ -529,6 +532,7 @@ async function _submitBooking(pct) {
     bandName:      selectedBand.name,
     bandEmail:     selectedBand.email     || '',
     bandContact:   selectedBand.contact   || '',
+    venueEmail:    selectedVenue.email    || '',
     venueAddress:  selectedVenue.address  || '',
     venueCity:     selectedVenue.city     || '',
     venueState:    selectedVenue.state    || '',
@@ -542,6 +546,7 @@ async function _submitBooking(pct) {
     commissionPct: pct,
     notes:              document.getElementById('notes').value,
     sendConfirmEmail:   document.getElementById('sendConfirmationEmail').checked,
+    contractPending:    contractIsPending,
     agentId:           String(agentId || '')
   };
 
@@ -549,9 +554,8 @@ async function _submitBooking(pct) {
     var result = await callApi('api_createBooking', [bookingData, agentId, 'Agent ' + agentId]);
     isSubmitting = false;
 
-    var sendCon = document.getElementById('sendContract');
     var contractNoteEl = document.getElementById('successContractNote');
-    if (sendCon && sendCon.checked && result && result.bookingId) {
+    if (contractIsPending && result && result.bookingId) {
       var bandEmail = bookingData.bandEmail || '';
       var perfDate  = '';
       try { perfDate = new Date(bookingData.date + 'T12:00:00').toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'}); } catch(e) { perfDate = bookingData.date; }
@@ -587,7 +591,9 @@ async function _submitBooking(pct) {
         callApi('api_createContractForReview', [result.bookingId, contractText, bandEmail, bookingData.bandName, bookingData.venueName, perfDate, bookingData.agentId || '']).catch(function(){});
       }
     } else if (contractNoteEl) {
-      contractNoteEl.textContent = '';
+      contractNoteEl.textContent = bookingData.sendConfirmEmail
+        ? 'A booking confirmation email was sent to the band and venue.'
+        : '';
     }
 
     document.getElementById('loading').style.display    = 'none';
