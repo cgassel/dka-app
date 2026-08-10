@@ -143,9 +143,74 @@ function showContractModal(c) {
     html += '<div class="unsig-box" style="margin-top:10px;background:#f3e5f5;border-color:#ce93d8;color:#6a1b9a;">&#x23F3; Awaiting venue signature from ' + esc(c.venueName) + '</div>';
   }
 
+  var showMessages = (c.status||'').toLowerCase() !== 'pending review';
+  if (showMessages) {
+    html += '<div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);margin:20px 0 8px;">Messages</div>';
+    html += '<div class="msg-thread" id="modalMsgThread"><div class="msg-empty">Loading…</div></div>';
+    html += '<div class="msg-inline-error" id="modalMsgError" style="display:none;color:#c62828;font-size:0.8rem;margin-bottom:8px;"></div>';
+    html += '<div class="msg-compose">';
+    html += '<textarea class="msg-input" id="modalMsgInput" placeholder="Ask the Contract Agent a question or request a change…"></textarea>';
+    html += '<button class="btn-msg-send" id="modalMsgSendBtn" onclick="sendModalMessage(\'' + c.contractId + '\')">Send</button>';
+    html += '</div>';
+  }
+
   document.getElementById('modalTitle').textContent = esc(c.bandName) + ' — ' + esc(c.venueName);
   document.getElementById('modalBody').innerHTML    = html;
   document.getElementById('modalOverlay').classList.add('open');
+
+  if (showMessages) loadModalMessages(c.contractId);
+}
+
+function loadModalMessages(contractId) {
+  callApi('api_getContractMessages', [contractId]).then(function(msgs) {
+    renderModalMessages(msgs || []);
+  }).catch(function() {
+    var el = document.getElementById('modalMsgThread');
+    if (el) el.innerHTML = '<div class="msg-empty">Couldn\'t load messages.</div>';
+  });
+}
+
+function renderModalMessages(msgs) {
+  var el = document.getElementById('modalMsgThread');
+  if (!el) return;
+  var roleNames = { band: 'Band', venue: 'Venue', agent: 'You', contractagent: 'Contract Agent' };
+  if (msgs.length === 0) {
+    el.innerHTML = '<div class="msg-empty">No messages yet. Ask a question below if you need anything changed.</div>';
+    return;
+  }
+  el.innerHTML = msgs.map(function(m) {
+    if (m.fromRole === 'contractagent' && m.text.indexOf('Sent a revised contract') === 0) {
+      return '<div class="msg-bubble system">' + esc(m.text) + ' &bull; ' + esc(m.createdAt) + '</div>';
+    }
+    var cls = m.fromRole === 'agent' ? 'mine' : 'theirs';
+    return '<div class="msg-bubble ' + cls + '">' +
+      '<div class="msg-meta">' + esc(roleNames[m.fromRole] || m.fromRole) + ' &bull; ' + esc(m.createdAt) + '</div>' +
+      esc(m.text) +
+    '</div>';
+  }).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+async function sendModalMessage(contractId) {
+  var input = document.getElementById('modalMsgInput');
+  var text = input.value.trim();
+  if (!text) return;
+  var btn = document.getElementById('modalMsgSendBtn');
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  try {
+    await callApi('api_postContractMessage', [contractId, 'agent', 'Booking Agent', text]);
+    input.value = '';
+    var errEl = document.getElementById('modalMsgError');
+    if (errEl) errEl.style.display = 'none';
+    loadModalMessages(contractId);
+  } catch (e) {
+    var errEl2 = document.getElementById('modalMsgError');
+    if (errEl2) { errEl2.textContent = 'Error sending message: ' + e.message; errEl2.style.display = 'block'; }
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Send';
+  }
 }
 
 function metaCell(label, value) {
