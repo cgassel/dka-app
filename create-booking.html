@@ -80,6 +80,20 @@
     @keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
     .help-text { font-size: 0.9rem; color: #666; margin-top: 6px; font-style: italic; }
     .info-box { background:var(--bronze-bg,rgba(160,112,24,0.08)); border-left:4px solid var(--bronze2,#A07018); padding:14px; margin:20px 0; border-radius:6px; }
+
+    .lineup-row { background:var(--card2,#f2ede4); border:1.5px solid var(--border,#d4c4a0); border-radius:10px; padding:14px 16px; margin-bottom:12px; position:relative; }
+    .lineup-row-num { font-size:0.68rem; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; color:var(--bronze2,#A07018); margin-bottom:10px; }
+    .lineup-row-grid { display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:10px; align-items:end; }
+    .lineup-row-grid label { display:block; font-size:0.68rem; font-weight:700; color:var(--muted,#6b5e48); margin-bottom:4px; }
+    .lineup-row-grid select, .lineup-row-grid input { width:100%; padding:8px 10px; border:1.5px solid var(--border,#d4c4a0); border-radius:6px; font-size:0.85rem; font-family:'Inter',sans-serif; }
+    .btn-remove-lineup { background:none; border:none; color:var(--red,#8B2000); font-size:0.75rem; font-weight:700; cursor:pointer; padding:4px 0; margin-top:8px; }
+    .btn-remove-lineup:hover { text-decoration:underline; }
+    .btn-add-lineup { width:100%; padding:12px; background:var(--card,#faf8f4); border:2px dashed var(--border,#d4c4a0); border-radius:10px; color:var(--bronze2,#A07018); font-weight:700; font-size:0.88rem; cursor:pointer; font-family:'Inter',sans-serif; }
+    .btn-add-lineup:hover { background:var(--bronze-bg,rgba(160,112,24,0.08)); border-color:var(--bronze2,#A07018); }
+    .btn-add-lineup:disabled { opacity:0.5; cursor:not-allowed; }
+    @media (max-width:640px) {
+      .lineup-row-grid { grid-template-columns:1fr 1fr; }
+    }
     .info-box strong { color:var(--bronze3,#7A5210); }
     .calculated-field { background: #f5f5f5; padding: 12px; border-radius: 8px; border: 2px solid #e0e0e0; font-weight: 600; color: #A07018; }
     .input-suffix-wrap { position: relative; }
@@ -212,29 +226,86 @@
 
     <form id="createBookingForm" onsubmit="return handleSubmit(event)">
 
-      <div class="section-title">Select Venue</div>
+      <div class="section-title">Booking Type</div>
       <div class="form-group">
-        <label>Venue <span class="required">*</span></label>
-        <select id="venue" required onchange="updateVenueInfo(); checkAvailability();">
-          <option value="">-- Loading venues... --</option>
+        <label>Venue Category <span class="required">*</span></label>
+        <select id="venueCategory" required onchange="switchVenueCategory()">
+          <option value="Club">Club</option>
+          <option value="Private Party">Private Party</option>
+          <option value="Festival">Festival</option>
         </select>
-      </div>
-      <div class="info-box" id="venueInfo" style="display:none;">
-        <strong>Venue Details:</strong><br><span id="venueDetails"></span>
       </div>
 
-      <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
-        <span>Select Band</span>
-        <button type="button" onclick="goToAddBand()" style="padding:8px 16px;font-size:0.8rem;background:var(--card2);color:var(--bronze2);border:1.5px solid var(--border);border-radius:7px;font-weight:700;text-transform:none;letter-spacing:0;box-shadow:none;">+ New Band</button>
+      <!-- CLUB: normal venue dropdown -->
+      <div id="clubVenueSection">
+        <div class="section-title">Select Venue</div>
+        <div class="form-group">
+          <label>Venue <span class="required">*</span></label>
+          <select id="venue" onchange="updateVenueInfo(); checkAvailability();">
+            <option value="">-- Loading venues... --</option>
+          </select>
+        </div>
+        <div class="info-box" id="venueInfo" style="display:none;">
+          <strong>Venue Details:</strong><br><span id="venueDetails"></span>
+        </div>
       </div>
-      <div class="form-group">
-        <label>Band <span class="required">*</span></label>
-        <select id="band" required onchange="updateBandInfo()">
-          <option value="">-- Loading bands... --</option>
-        </select>
+
+      <!-- PRIVATE PARTY / FESTIVAL: pick a past one, or create new -->
+      <div id="specialVenueSection" style="display:none;">
+        <div class="section-title" id="specialVenueSectionTitle">Select Private Party</div>
+        <div class="form-group">
+          <label id="specialVenueSelectLabel">Private Party <span class="required">*</span></label>
+          <select id="specialVenueSelect" onchange="onSpecialVenueSelectChange()">
+            <option value="">-- Loading... --</option>
+          </select>
+        </div>
+        <div id="specialVenueNewFields" style="display:none;">
+          <div class="form-group" id="specialCompanyNameGroup" style="display:none;">
+            <label>Company Name</label>
+            <input type="text" id="specialCompanyName" placeholder="For corporate events, e.g. Acme Corp">
+          </div>
+          <div class="form-group">
+            <label id="specialVenueNameLabel">Party Name <span class="required">*</span></label>
+            <input type="text" id="specialVenueName" placeholder="e.g., Smith Wedding">
+          </div>
+          <div class="row">
+            <div class="form-group">
+              <label>Address</label>
+              <input type="text" id="specialVenueAddress" placeholder="Street address (optional)">
+            </div>
+            <div class="form-group">
+              <label>City / State</label>
+              <input type="text" id="specialVenueCityState" placeholder="e.g., Austin, TX">
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="info-box" id="bandInfo" style="display:none;">
-        <strong>Band Details:</strong><br><span id="bandDetails"></span>
+
+      <!-- CLUB / PRIVATE PARTY: single band select -->
+      <div id="normalBandSection">
+        <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+          <span>Select Band</span>
+          <button type="button" onclick="goToAddBand()" style="padding:8px 16px;font-size:0.8rem;background:var(--card2);color:var(--bronze2);border:1.5px solid var(--border);border-radius:7px;font-weight:700;text-transform:none;letter-spacing:0;box-shadow:none;">+ New Band</button>
+        </div>
+        <div class="form-group">
+          <label>Band <span class="required">*</span></label>
+          <select id="band" onchange="updateBandInfo()">
+            <option value="">-- Loading bands... --</option>
+          </select>
+        </div>
+        <div class="info-box" id="bandInfo" style="display:none;">
+          <strong>Band Details:</strong><br><span id="bandDetails"></span>
+        </div>
+      </div>
+
+      <!-- FESTIVAL: multi-band lineup builder, up to 100 bands -->
+      <div id="festivalLineupSection" style="display:none;">
+        <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+          <span>Festival Lineup</span>
+          <span style="font-size:0.72rem;font-weight:700;color:var(--muted);" id="lineupCount">0 / 100 bands</span>
+        </div>
+        <div id="lineupRows"></div>
+        <button type="button" onclick="addLineupRow()" class="btn-add-lineup" id="addLineupBtn">+ Add Band to Lineup</button>
       </div>
 
       <div class="section-title">Date &amp; Time</div>
@@ -242,7 +313,7 @@
         <div class="form-group">
           <label>Date <span class="required">*</span></label>
           <input type="date" id="bookingDate" required onchange="checkAvailability()">
-          <div class="help-text">Check venue calendar for availability</div>
+          <div class="help-text" id="dateHelpText">Check venue calendar for availability</div>
         </div>
         <div class="form-group">
           <label>Status</label>
@@ -254,7 +325,7 @@
           </select>
         </div>
       </div>
-      <div class="row">
+      <div class="row" id="sharedTimeRow">
         <div class="form-group">
           <label>Start Time <span class="required">*</span></label>
           <input type="time" id="startTime" required value="20:00">
@@ -266,7 +337,7 @@
       </div>
 
       <div class="section-title">Payment Details</div>
-      <div class="row">
+      <div class="row" id="sharedPayRow">
         <div class="form-group">
           <label>Sound/Lights Provided By</label>
           <select id="soundLights" onchange="updatePayAmount()">
@@ -274,7 +345,7 @@
             <option value="Band">Band (Higher Rate)</option>
           </select>
         </div>
-        <div class="form-group">
+        <div class="form-group" id="singlePayGroup">
           <label>Pay Amount <span class="required">*</span></label>
           <div class="calculated-field" id="payAmount">Select band first</div>
           <input type="hidden" id="payAmountValue">
