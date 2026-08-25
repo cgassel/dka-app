@@ -38,7 +38,10 @@ window.onload = function() {
       maxZoom: 19
     }).addTo(map);
 
-    callApi('api_getVenuesFullData', []).then(function(venues) {
+    callApi('api_getVenuesFullData', []).then(function(venuesRaw) {
+      // Private Parties and Festivals are booking-only entries, not real
+      // venues — keep them off the map.
+      var venues = (venuesRaw || []).filter(function(v) { return !v.category || v.category === 'Club'; });
       if (!venues || venues.length === 0) {
         document.getElementById('loadingOverlay').innerHTML =
           '<div style="color:#F9A825;font-family:Inter;font-size:1.2rem;letter-spacing:2px;text-transform:uppercase;">No Venues Found<br><small style="font-size:0.9rem;margin-top:10px;display:block;">Add venues with coordinates to see them on the map</small></div>';
