@@ -175,10 +175,13 @@ window.onload = function() {
 
 function loadVenues() {
   return callApi('api_getVenuesFullData', []).then(function(data) {
-    venues = data;
+    // Private Parties and Festivals have their own picker (see
+    // switchVenueCategory / loadSpecialVenues) — keep them out of the
+    // normal Club venue dropdown.
+    venues = data.filter(function(v) { return !v.category || v.category === 'Club'; });
     var select = document.getElementById('venue');
     select.innerHTML = '<option value="">-- Select Venue --</option>';
-    data.forEach(function(venue) {
+    venues.forEach(function(venue) {
       var opt = document.createElement('option');
       opt.value = venue.id;
       opt.textContent = venue.name + ' - ' + venue.city + ', ' + venue.state;
@@ -188,6 +191,165 @@ function loadVenues() {
     _venuesDone = true;
     _tryApplyPrefill();
   }).catch(function(e) { openAlertModal('Error loading venues: ' + e.message); });
+}
+
+// ── Venue Category (Club / Private Party / Festival) ────────────────────────
+
+var _specialVenues = [];
+var MAX_LINEUP_BANDS = 100;
+
+function switchVenueCategory() {
+  var category = document.getElementById('venueCategory').value;
+
+  var clubSection       = document.getElementById('clubVenueSection');
+  var specialSection    = document.getElementById('specialVenueSection');
+  var normalBandSection = document.getElementById('normalBandSection');
+  var festivalSection   = document.getElementById('festivalLineupSection');
+  var sharedTimeRow     = document.getElementById('sharedTimeRow');
+  var singlePayGroup    = document.getElementById('singlePayGroup');
+  var dateHelpText      = document.getElementById('dateHelpText');
+  var editOpt           = document.getElementById('optEdit');
+
+  // Switching away from Club — any conflict warning tied to the old venue
+  // selection no longer applies.
+  _venueConflict = { hasConflict: false, count: 0 };
+  document.getElementById('warningMsg').style.display = 'none';
+
+  if (category === 'Club') {
+    clubSection.style.display       = '';
+    specialSection.style.display    = 'none';
+    normalBandSection.style.display = '';
+    festivalSection.style.display   = 'none';
+    sharedTimeRow.style.display     = '';
+    singlePayGroup.style.display    = '';
+    dateHelpText.textContent = 'Check venue calendar for availability';
+    if (editOpt) editOpt.style.display = '';
+    return;
+  }
+
+  clubSection.style.display    = 'none';
+  specialSection.style.display = '';
+
+  if (category === 'Private Party') {
+    normalBandSection.style.display = '';
+    festivalSection.style.display   = 'none';
+    sharedTimeRow.style.display     = '';
+    singlePayGroup.style.display    = '';
+    dateHelpText.textContent = 'Date of the private event';
+    document.getElementById('specialVenueSectionTitle').textContent = 'Select Private Party';
+    document.getElementById('specialVenueSelectLabel').innerHTML    = 'Private Party <span class="required">*</span>';
+    document.getElementById('specialVenueNameLabel').innerHTML      = 'Party Name <span class="required">*</span>';
+    document.getElementById('specialCompanyNameGroup').style.display = 'block';
+    if (editOpt) editOpt.style.display = '';
+    loadSpecialVenues('Private Party');
+
+  } else if (category === 'Festival') {
+    normalBandSection.style.display = 'none';
+    festivalSection.style.display   = '';
+    sharedTimeRow.style.display     = 'none';
+    singlePayGroup.style.display    = 'none';
+    dateHelpText.textContent = 'Festival date';
+    document.getElementById('specialVenueSectionTitle').textContent = 'Select Festival';
+    document.getElementById('specialVenueSelectLabel').innerHTML    = 'Festival <span class="required">*</span>';
+    document.getElementById('specialVenueNameLabel').innerHTML      = 'Festival Name <span class="required">*</span>';
+    document.getElementById('specialCompanyNameGroup').style.display = 'none';
+    loadSpecialVenues('Festival');
+
+    // "Edit Before Review" doesn't make sense across a whole lineup of
+    // different bands — each gets its own auto-generated contract instead.
+    if (_contractMode === 'edit') selectContractOpt('standard');
+    if (editOpt) editOpt.style.display = 'none';
+
+    if (document.querySelectorAll('.lineup-row').length === 0) addLineupRow();
+  }
+}
+
+function loadSpecialVenues(category) {
+  var select = document.getElementById('specialVenueSelect');
+  select.innerHTML = '<option value="">-- Loading... --</option>';
+  callApi('api_getVenuesByCategory', [category]).then(function(data) {
+    _specialVenues = data || [];
+    select.innerHTML = '<option value="">-- Select --</option>';
+    _specialVenues.forEach(function(v) {
+      var opt = document.createElement('option');
+      opt.value = v.id;
+      opt.textContent = v.name + (v.companyName ? ' (' + v.companyName + ')' : '');
+      select.appendChild(opt);
+    });
+    var newOpt = document.createElement('option');
+    newOpt.value = '__new__';
+    newOpt.textContent = '+ Create New ' + (category === 'Festival' ? 'Festival' : 'Private Party') + '...';
+    select.appendChild(newOpt);
+
+    if (_specialVenues.length === 0) {
+      select.value = '__new__';
+      onSpecialVenueSelectChange();
+    }
+  }).catch(function() {
+    select.innerHTML = '<option value="">-- Error loading, try again --</option>';
+  });
+}
+
+function onSpecialVenueSelectChange() {
+  var val = document.getElementById('specialVenueSelect').value;
+  document.getElementById('specialVenueNewFields').style.display = (val === '__new__') ? 'block' : 'none';
+}
+
+// ── Festival lineup builder ──────────────────────────────────────────────────
+
+function addLineupRow() {
+  var existing = document.querySelectorAll('.lineup-row').length;
+  if (existing >= MAX_LINEUP_BANDS) return;
+
+  var idx = existing + 1;
+  var rowId = 'lineupRow_' + Date.now() + '_' + idx;
+  var div = document.createElement('div');
+  div.className = 'lineup-row';
+  div.id = rowId;
+  div.innerHTML =
+    '<div class="lineup-row-num">Band ' + idx + '</div>' +
+    '<div class="lineup-row-grid">' +
+      '<div><label>Band</label><select class="lineup-band-select" onchange="onLineupBandChange(this)"><option value="">-- Select Band --</option>' + _bandOptionsHtml() + '</select></div>' +
+      '<div><label>Start</label><input type="time" class="lineup-start" value="20:00"></div>' +
+      '<div><label>End</label><input type="time" class="lineup-end" value="21:00"></div>' +
+      '<div><label>Pay ($)</label><input type="number" class="lineup-pay" min="0" step="1" placeholder="0"></div>' +
+    '</div>' +
+    '<button type="button" class="btn-remove-lineup" onclick="removeLineupRow(\'' + rowId + '\')">&times; Remove</button>';
+  document.getElementById('lineupRows').appendChild(div);
+  updateLineupCount();
+}
+
+function _bandOptionsHtml() {
+  return bands.map(function(b) {
+    return '<option value="' + b.id + '">' + _cbEsc(b.name) + ' - ' + _cbEsc(b.genre) + '</option>';
+  }).join('');
+}
+
+function onLineupBandChange(selectEl) {
+  var band = bands.find(function(b) { return String(b.id) === String(selectEl.value); });
+  var row = selectEl.closest('.lineup-row');
+  var payInput = row.querySelector('.lineup-pay');
+  if (band && !payInput.value) {
+    var soundLights = document.getElementById('soundLights').value;
+    var suggested = soundLights === 'Venue' ? (parseFloat(band.payRateNoSound) || 0) : (parseFloat(band.payRateWithSound) || 0);
+    if (suggested) payInput.value = suggested;
+  }
+}
+
+function removeLineupRow(rowId) {
+  var el = document.getElementById(rowId);
+  if (el) el.remove();
+  // Renumber the "Band N" labels so they stay sequential after a removal
+  document.querySelectorAll('.lineup-row').forEach(function(row, i) {
+    row.querySelector('.lineup-row-num').textContent = 'Band ' + (i + 1);
+  });
+  updateLineupCount();
+}
+
+function updateLineupCount() {
+  var n = document.querySelectorAll('.lineup-row').length;
+  document.getElementById('lineupCount').textContent = n + ' / ' + MAX_LINEUP_BANDS + ' bands';
+  document.getElementById('addLineupBtn').disabled = n >= MAX_LINEUP_BANDS;
 }
 
 function toggleEmailCheckbox() {
@@ -496,9 +658,48 @@ async function handleSubmit(event) {
 
   var pct = parseFloat(document.getElementById('commissionPct').value);
   if (isNaN(pct) || pct < 0 || pct > 100) {
-    document.getElementById('errorMsg').style.display = 'block';
-    document.getElementById('errorMsg').innerHTML = '<strong>Error:</strong> Commission % must be between 0 and 100.';
+    _showFormError('Commission % must be between 0 and 100.');
     return false;
+  }
+
+  var category = document.getElementById('venueCategory').value;
+
+  // Venue validation
+  if (category === 'Club') {
+    if (!document.getElementById('venue').value) {
+      _showFormError('Please select a venue.');
+      return false;
+    }
+  } else {
+    var specialVal = document.getElementById('specialVenueSelect').value;
+    if (!specialVal) {
+      _showFormError('Please select or create a ' + (category === 'Festival' ? 'festival' : 'private party') + '.');
+      return false;
+    }
+    if (specialVal === '__new__' && !document.getElementById('specialVenueName').value.trim()) {
+      _showFormError('Please enter a ' + (category === 'Festival' ? 'festival name' : 'party name') + '.');
+      return false;
+    }
+  }
+
+  // Band validation
+  if (category === 'Festival') {
+    var lineupRows = document.querySelectorAll('.lineup-row');
+    if (lineupRows.length === 0) {
+      _showFormError('Please add at least one band to the lineup.');
+      return false;
+    }
+    for (var li = 0; li < lineupRows.length; li++) {
+      if (!lineupRows[li].querySelector('.lineup-band-select').value) {
+        _showFormError('Please select a band for every row in the lineup, or remove empty rows.');
+        return false;
+      }
+    }
+  } else {
+    if (!document.getElementById('band').value) {
+      _showFormError('Please select a band.');
+      return false;
+    }
   }
 
   if (_venueConflict.hasConflict) {
@@ -513,6 +714,172 @@ async function handleSubmit(event) {
   return false;
 }
 
+function _showFormError(msg) {
+  document.getElementById('errorMsg').style.display = 'block';
+  document.getElementById('errorMsg').innerHTML = '<strong>Error:</strong> ' + msg;
+  window.scrollTo(0, 0);
+}
+
+// Creates a new Private Party / Festival venue record on the fly, or looks
+// up the one the agent picked from the dropdown. Returns the shared venue
+// fields every booking in this submission will use.
+async function _resolveVenue(category) {
+  if (category === 'Club') {
+    return {
+      venueId: document.getElementById('venue').value,
+      venueName: selectedVenue.name,
+      venueEmail: selectedVenue.email || '',
+      venueAddress: selectedVenue.address || '',
+      venueCity: selectedVenue.city || '',
+      venueState: selectedVenue.state || '',
+      venuePhone: selectedVenue.phone || ''
+    };
+  }
+
+  var sel = document.getElementById('specialVenueSelect').value;
+  if (sel && sel !== '__new__') {
+    var existing = _specialVenues.find(function(v) { return String(v.id) === String(sel); });
+    return {
+      venueId: existing.id, venueName: existing.name,
+      venueEmail: existing.email || '', venueAddress: existing.address || '',
+      venueCity: existing.city || '', venueState: existing.state || '', venuePhone: existing.phone || ''
+    };
+  }
+
+  var name        = document.getElementById('specialVenueName').value.trim();
+  var companyName = category === 'Private Party' ? document.getElementById('specialCompanyName').value.trim() : '';
+  var address     = document.getElementById('specialVenueAddress').value.trim();
+  var cityState   = document.getElementById('specialVenueCityState').value.trim();
+  var city = '', state = '';
+  if (cityState.indexOf(',') !== -1) {
+    var parts = cityState.split(',');
+    city = parts[0].trim(); state = (parts[1] || '').trim();
+  } else {
+    city = cityState;
+  }
+
+  var venueData = {
+    category: category, companyName: companyName, venueName: name,
+    contactName: '', email: '', phone: '', address: address, city: city, state: state, zip: '',
+    capacity: 0, payRateBudget: 0
+  };
+  var result = await callApi('api_addVenue', [venueData, agentId, 'Agent ' + agentId]);
+  return {
+    venueId: result.venueId, venueName: name,
+    venueEmail: '', venueAddress: address, venueCity: city, venueState: state, venuePhone: ''
+  };
+}
+
+// Generates and submits the contract-for-review for one booking. When
+// forceStandard is true (used for every band in a festival lineup), the
+// "Edit Before Review" text is never used — each band gets its own
+// auto-generated contract from its own actual details, since one edited
+// block of text can't correctly apply to a whole lineup of different bands.
+async function _createContractForBooking(bookingData, bookingId, forceStandard) {
+  var bandEmail = bookingData.bandEmail || '';
+  var perfDate  = '';
+  try { perfDate = new Date(bookingData.date + 'T12:00:00').toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'}); } catch(e) { perfDate = bookingData.date; }
+
+  var contractText = '';
+  if (!forceStandard && _contractMode === 'edit') {
+    var ta = document.getElementById('contractTextarea');
+    contractText = ta ? ta.value : '';
+  }
+
+  if (forceStandard || _contractMode === 'standard' || !contractText) {
+    var bkDataForContract = {
+      bandName:    bookingData.bandName,
+      venueName:   bookingData.venueName,
+      date:        bookingData.date,
+      startTime:   bookingData.startTime,
+      endTime:     bookingData.endTime,
+      payAmount:   bookingData.payAmount,
+      soundLights: bookingData.soundLights,
+      notes:       bookingData.notes,
+      commission:  String(bookingData.commissionPct || ''),
+      bookingId:   String(bookingId)
+    };
+    try {
+      var genResult = await callApi('api_generateContractText', [bkDataForContract, null]);
+      var text = (genResult && genResult.text) ? genResult.text : '';
+      if (text) {
+        await callApi('api_createContractForReview', [bookingId, text, bandEmail, bookingData.bandName, bookingData.venueName, perfDate, bookingData.agentId || '']);
+      }
+    } catch (e) { /* non-fatal — booking already saved */ }
+  } else if (contractText) {
+    try {
+      await callApi('api_createContractForReview', [bookingId, contractText, bandEmail, bookingData.bandName, bookingData.venueName, perfDate, bookingData.agentId || '']);
+    } catch (e) { /* non-fatal */ }
+  }
+}
+
+async function _submitSingleBooking(shared, contractIsPending) {
+  var bookingData = Object.assign({}, shared, {
+    bandId:      document.getElementById('band').value,
+    bandName:    selectedBand.name,
+    bandEmail:   selectedBand.email   || '',
+    bandContact: selectedBand.contact || '',
+    startTime:   document.getElementById('startTime').value,
+    endTime:     document.getElementById('endTime').value,
+    payAmount:   parseFloat(document.getElementById('payAmountValue').value),
+    contractPending: contractIsPending
+  });
+
+  var result = await callApi('api_createBooking', [bookingData, agentId, 'Agent ' + agentId]);
+
+  var contractNoteEl = document.getElementById('successContractNote');
+  if (contractIsPending && result && result.bookingId) {
+    await _createContractForBooking(bookingData, result.bookingId, false);
+    if (contractNoteEl) contractNoteEl.textContent = 'Your contract has been sent to a Contract Agent for review before it goes out to the band and venue.';
+  } else if (contractNoteEl) {
+    contractNoteEl.textContent = bookingData.sendConfirmEmail
+      ? 'A booking confirmation email was sent to the band and venue.'
+      : '';
+  }
+}
+
+async function _submitFestivalLineup(shared, contractIsPending) {
+  var rows = Array.prototype.slice.call(document.querySelectorAll('.lineup-row'));
+  var loadingText = document.querySelector('#loading p');
+  var successCount = 0, failedNames = [];
+
+  for (var i = 0; i < rows.length; i++) {
+    var row    = rows[i];
+    var bandId = row.querySelector('.lineup-band-select').value;
+    var band   = bands.find(function(b) { return String(b.id) === String(bandId); });
+    if (!band) continue;
+
+    if (loadingText) loadingText.textContent = 'Creating booking ' + (i + 1) + ' of ' + rows.length + ' (' + band.name + ')\u2026';
+
+    var bookingData = Object.assign({}, shared, {
+      bandId: band.id, bandName: band.name,
+      bandEmail: band.email || '', bandContact: band.contact || '',
+      startTime: row.querySelector('.lineup-start').value,
+      endTime:   row.querySelector('.lineup-end').value,
+      payAmount: parseFloat(row.querySelector('.lineup-pay').value) || 0,
+      contractPending: contractIsPending
+    });
+
+    try {
+      var result = await callApi('api_createBooking', [bookingData, agentId, 'Agent ' + agentId]);
+      if (contractIsPending && result && result.bookingId) {
+        await _createContractForBooking(bookingData, result.bookingId, true);
+      }
+      successCount++;
+    } catch (e) {
+      failedNames.push(band.name);
+    }
+  }
+
+  var contractNoteEl = document.getElementById('successContractNote');
+  if (contractNoteEl) {
+    var msg = successCount + ' booking' + (successCount === 1 ? '' : 's') + ' created for the festival lineup.';
+    if (contractIsPending && successCount > 0) msg += ' Contracts sent to a Contract Agent for review.';
+    if (failedNames.length > 0) msg += ' ' + failedNames.length + ' failed: ' + failedNames.join(', ') + '.';
+    contractNoteEl.textContent = msg;
+  }
+}
+
 async function _submitBooking(pct) {
   isSubmitting = true;
   document.getElementById('successMsg').style.display  = 'none';
@@ -520,82 +887,41 @@ async function _submitBooking(pct) {
   document.getElementById('warningMsg').style.display  = 'none';
   document.getElementById('createBookingForm').style.display = 'none';
   document.getElementById('loading').style.display     = 'block';
+  var loadingTextEl = document.querySelector('#loading p');
+  if (loadingTextEl) loadingTextEl.textContent = 'Creating booking\u2026';
   window.scrollTo(0, 0);
 
+  var category = document.getElementById('venueCategory').value;
   var sendCon = document.getElementById('sendContract');
   var contractIsPending = !!(sendCon && sendCon.checked);
 
-  var bookingData = {
-    venueId:       document.getElementById('venue').value,
-    venueName:     selectedVenue.name,
-    bandId:        document.getElementById('band').value,
-    bandName:      selectedBand.name,
-    bandEmail:     selectedBand.email     || '',
-    bandContact:   selectedBand.contact   || '',
-    venueEmail:    selectedVenue.email    || '',
-    venueAddress:  selectedVenue.address  || '',
-    venueCity:     selectedVenue.city     || '',
-    venueState:    selectedVenue.state    || '',
-    venuePhone:    selectedVenue.phone    || '',
-    date:          document.getElementById('bookingDate').value,
-    startTime:     document.getElementById('startTime').value,
-    endTime:       document.getElementById('endTime').value,
-    payAmount:     parseFloat(document.getElementById('payAmountValue').value),
-    soundLights:   document.getElementById('soundLights').value,
-    status:        document.getElementById('status').value,
-    commissionPct: pct,
-    notes:              document.getElementById('notes').value,
-    sendConfirmEmail:   document.getElementById('sendConfirmationEmail').checked,
-    contractPending:    contractIsPending,
-    agentId:           String(agentId || '')
-  };
-
   try {
-    var result = await callApi('api_createBooking', [bookingData, agentId, 'Agent ' + agentId]);
-    isSubmitting = false;
+    var venueInfo = await _resolveVenue(category);
 
-    var contractNoteEl = document.getElementById('successContractNote');
-    if (contractIsPending && result && result.bookingId) {
-      var bandEmail = bookingData.bandEmail || '';
-      var perfDate  = '';
-      try { perfDate = new Date(bookingData.date + 'T12:00:00').toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'}); } catch(e) { perfDate = bookingData.date; }
+    var shared = {
+      venueId:      venueInfo.venueId,
+      venueName:    venueInfo.venueName,
+      venueEmail:   venueInfo.venueEmail,
+      venueAddress: venueInfo.venueAddress,
+      venueCity:    venueInfo.venueCity,
+      venueState:   venueInfo.venueState,
+      venuePhone:   venueInfo.venuePhone,
+      date:         document.getElementById('bookingDate').value,
+      status:       document.getElementById('status').value,
+      soundLights:  document.getElementById('soundLights').value,
+      commissionPct: pct,
+      notes:        document.getElementById('notes').value,
+      sendConfirmEmail: document.getElementById('sendConfirmationEmail').checked,
+      agentId:      String(agentId || '')
+    };
 
-      var contractText = '';
-      if (_contractMode === 'edit') {
-        var ta = document.getElementById('contractTextarea');
-        contractText = ta ? ta.value : '';
-      }
-
-      if (contractNoteEl) contractNoteEl.textContent = 'Your contract has been sent to a Contract Agent for review before it goes out to the band and venue.';
-
-      if (_contractMode === 'standard' || !contractText) {
-        var bkDataForContract = {
-          bandName:    bookingData.bandName,
-          venueName:   bookingData.venueName,
-          date:        bookingData.date,
-          startTime:   bookingData.startTime,
-          endTime:     bookingData.endTime,
-          payAmount:   bookingData.payAmount,
-          soundLights: bookingData.soundLights,
-          notes:       bookingData.notes,
-          commission:  String(bookingData.commissionPct || ''),
-          bookingId:   String(result.bookingId)
-        };
-        callApi('api_generateContractText', [bkDataForContract, null]).then(function(genResult) {
-          var text = (genResult && genResult.text) ? genResult.text : '';
-          if (text) {
-            callApi('api_createContractForReview', [result.bookingId, text, bandEmail, bookingData.bandName, bookingData.venueName, perfDate, bookingData.agentId || '']).catch(function(){});
-          }
-        }).catch(function(){});
-      } else if (contractText) {
-        callApi('api_createContractForReview', [result.bookingId, contractText, bandEmail, bookingData.bandName, bookingData.venueName, perfDate, bookingData.agentId || '']).catch(function(){});
-      }
-    } else if (contractNoteEl) {
-      contractNoteEl.textContent = bookingData.sendConfirmEmail
-        ? 'A booking confirmation email was sent to the band and venue.'
-        : '';
+    if (category === 'Festival') {
+      await _submitFestivalLineup(shared, contractIsPending);
+    } else {
+      await _submitSingleBooking(shared, contractIsPending);
     }
 
+    isSubmitting = false;
     document.getElementById('loading').style.display    = 'none';
     document.getElementById('successMsg').style.display = 'block';
     window.scrollTo(0, 0);
@@ -610,6 +936,7 @@ async function _submitBooking(pct) {
 
   return false;
 }
+
 
 // ── CONTRACT ──────────────────────────────────────────────────────────────
 var _contractTemplateLoaded = false;
