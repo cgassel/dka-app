@@ -61,13 +61,20 @@ var MONTHS = ['January','February','March','April','May','June',
 // BOOT
 // ═══════════════════════════════════════════════════════════════════════════
 window.onload = function() {
-  var urlParams = new URLSearchParams(window.location.search);
-  var bidParam  = urlParams.get('bid') || sessionStorage.getItem('dka_id');
+  var urlParams   = new URLSearchParams(window.location.search);
+  var bidFromUrl  = urlParams.get('bid');
+  var sessionRole = sessionStorage.getItem('dka_role');
+  var sessionBid  = sessionStorage.getItem('dka_id');
 
-  if (!bidParam) {
+  // A URL alone is never enough to get in — you must already be logged in
+  // as a band in THIS browser. The ?bid= param only exists to carry the
+  // band ID back through the Google Calendar OAuth redirect; if it's
+  // present but doesn't match who's actually logged in, it's ignored.
+  if (sessionRole !== 'band' || !sessionBid) {
     window.location.href = 'index.html';
     return;
   }
+  var bidParam = (bidFromUrl && bidFromUrl === sessionBid) ? bidFromUrl : sessionBid;
 
   callApi('getCurrentBandById', [bidParam]).then(function(band) {
     if (!band) {
