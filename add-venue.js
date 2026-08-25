@@ -14,6 +14,27 @@ var isSubmitting = false;
   }
 })();
 
+function updateVenueCategoryUI() {
+  var category = document.getElementById('venueCategory').value;
+  var companyGroup = document.getElementById('companyNameGroup');
+  var nameLabel = document.getElementById('venueNameLabel');
+  var nameInput = document.getElementById('venueName');
+
+  if (category === 'Private Party') {
+    companyGroup.style.display = 'block';
+    nameLabel.innerHTML = 'Party Name <span class="required">*</span>';
+    nameInput.placeholder = 'e.g., Smith Wedding';
+  } else if (category === 'Festival') {
+    companyGroup.style.display = 'none';
+    nameLabel.innerHTML = 'Festival Name <span class="required">*</span>';
+    nameInput.placeholder = 'e.g., Riverside Music Festival';
+  } else {
+    companyGroup.style.display = 'none';
+    nameLabel.innerHTML = 'Venue Name <span class="required">*</span>';
+    nameInput.placeholder = 'The Blue Note';
+  }
+}
+
 function updateVenueRating() {
   var cap = parseInt(document.getElementById('capacity').value) || 0;
   var badge = document.getElementById('ratingBadge');
@@ -172,6 +193,8 @@ async function handleSubmit(event) {
   var prefs = collectPreferences();
 
   var venueData = {
+    category:       document.getElementById('venueCategory').value,
+    companyName:    document.getElementById('companyName').value,
     venueName:      document.getElementById('venueName').value,
     contactName:    document.getElementById('contactName').value,
     email:          document.getElementById('email').value,
