@@ -51,39 +51,14 @@ async function callApi(action, args = []) {
 }
 
 // ============================================================================
-// Require sign-in again after the app is backgrounded and resumed.
-//
-// This only fires on a genuine hidden -> visible cycle on the SAME loaded
-// page (i.e. the user minimized the app / switched away and came back).
-// It deliberately does NOT act just because the page starts hidden or
-// happens to load already visible, which keeps it from misfiring during:
-//   - normal in-app navigation (clicking any nav button/link fully unloads
-//     the current page and loads a new one — the new page never receives a
-//     "became visible again" transition, since it's a fresh instance)
-//   - the Google Calendar connect flow (redirects out to Google and back,
-//     which is also a fresh page load, not a resumed instance)
-// ============================================================================
-document.addEventListener('visibilitychange', function () {
-  if (document.visibilityState === 'hidden') {
-    if (sessionStorage.getItem('dka_role')) sessionStorage.setItem('dka_backgrounded', '1');
-  } else if (document.visibilityState === 'visible' && sessionStorage.getItem('dka_backgrounded')) {
-    sessionStorage.removeItem('dka_role');
-    sessionStorage.removeItem('dka_id');
-    sessionStorage.removeItem('dka_backgrounded');
-    window.location.href = 'index.html';
-  }
-});
-
-// ============================================================================
 // Require sign-in again after 10 minutes with no user activity.
 //
 // Tracks the last time the user interacted with the page (tap, scroll, key
-// press) in sessionStorage, so the timer survives navigating between pages.
-// A periodic check compares that against the current time and signs the
-// user out once the limit is passed — this covers the case where the app
-// stays open and visible (so the backgrounding check above never fires) but
-// the person has simply stopped using it, e.g. the phone is face-up on a
-// table with the screen still on.
+// press) in sessionStorage, so the timer survives navigating between pages
+// and survives backgrounding the app too — if you switch away for 10+
+// minutes and come back, the visibility-triggered check below catches it.
+// Just switching away briefly and coming right back does NOT sign you out;
+// only actual inactivity does, however that time gets spent.
 // ============================================================================
 (function () {
   var IDLE_LIMIT_MS = 10 * 60 * 1000; // 10 minutes
@@ -106,7 +81,6 @@ document.addEventListener('visibilitychange', function () {
     if (Date.now() - last >= IDLE_LIMIT_MS) {
       sessionStorage.removeItem('dka_role');
       sessionStorage.removeItem('dka_id');
-      sessionStorage.removeItem('dka_backgrounded');
       sessionStorage.removeItem('dka_last_activity');
       window.location.href = 'index.html';
     }
@@ -120,7 +94,9 @@ document.addEventListener('visibilitychange', function () {
   setInterval(checkIdle, CHECK_INTERVAL_MS);
 
   // Also re-check immediately when the tab regains visibility, in case the
-  // browser throttled the interval timer while the page was hidden.
+  // browser throttled the interval timer while the page was hidden — this
+  // is what catches "backgrounded for 10+ minutes" without punishing a
+  // quick switch-away-and-back.
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'visible') checkIdle();
   });
