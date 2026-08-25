@@ -58,13 +58,20 @@ var MONTHS   = ['January','February','March','April','May','June','July','August
 // BOOT
 // ═══════════════════════════════════════════════════════════════════════════
 window.onload = function() {
-  var urlParams = new URLSearchParams(window.location.search);
-  var vidParam  = urlParams.get('vid') || sessionStorage.getItem('dka_id');
+  var urlParams   = new URLSearchParams(window.location.search);
+  var vidFromUrl  = urlParams.get('vid');
+  var sessionRole = sessionStorage.getItem('dka_role');
+  var sessionVid  = sessionStorage.getItem('dka_id');
 
-  if (!vidParam) {
+  // A URL alone is never enough to get in — you must already be logged in
+  // as a venue in THIS browser. The ?vid= param only exists to carry the
+  // venue ID back through the Google Calendar OAuth redirect; if it's
+  // present but doesn't match who's actually logged in, it's ignored.
+  if (sessionRole !== 'venue' || !sessionVid) {
     window.location.href = 'index.html';
     return;
   }
+  var vidParam = (vidFromUrl && vidFromUrl === sessionVid) ? vidFromUrl : sessionVid;
 
   callApi('getCurrentVenueById', [vidParam]).then(onVenueLoaded).catch(function(e) {
     toast('Error loading venue: '+e.message,'error');
