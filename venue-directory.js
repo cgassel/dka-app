@@ -32,7 +32,10 @@ window.onload = function() {
 
 function load() {
   callApi('api_getVenuesFullData', []).then(function(data) {
-    allVenues = Array.isArray(data) ? data : [];
+    var all = Array.isArray(data) ? data : [];
+    // Private Parties and Festivals are booking-only entries, not real
+    // venues — keep them out of the directory.
+    allVenues = all.filter(function(v) { return !v.category || v.category === 'Club'; });
     buildStates(); stats(); filter();
   }).catch(function(err) {
     document.getElementById('tableWrapper').innerHTML =
