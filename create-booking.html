@@ -450,6 +450,8 @@
       </div>
       <div class="modal-card-body">
         <p id="confirmModalMessage" style="margin:0;line-height:1.6;color:var(--text);"></p>
+        <a href="#" id="confirmModalViewLink" onclick="toggleConflictDetails(event)" style="display:none;font-size:0.85rem;color:var(--bronze2);font-weight:600;margin-top:10px;">&#128065; View Existing Booking</a>
+        <div id="confirmModalDetails" style="display:none;margin-top:12px;padding:12px 14px;background:var(--card2);border-radius:8px;font-size:0.85rem;line-height:1.7;color:var(--text);"></div>
       </div>
       <div class="modal-card-footer" id="confirmModalFooter">
         <button type="button" class="btn-secondary" onclick="_confirmModalRespond(false)">Cancel</button>
