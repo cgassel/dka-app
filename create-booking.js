@@ -594,7 +594,7 @@ function checkAvailability() {
       return (b.date || '').substring(0, 10) === date && b.status !== 'Cancelled';
     });
 
-    _venueConflict = { hasConflict: matches.length > 0, count: matches.length };
+    _venueConflict = { hasConflict: matches.length > 0, count: matches.length, matches: matches };
 
     if (matches.length === 0) {
       warnEl.style.display = 'none';
@@ -631,8 +631,30 @@ function openConfirmModal(message, onConfirm, opts) {
   document.getElementById('confirmModalFooter').innerHTML =
     '<button type="button" class="btn-secondary" onclick="_confirmModalRespond(false)">' + (opts.cancelLabel || 'Cancel') + '</button>' +
     '<button type="button" class="btn-primary" onclick="_confirmModalRespond(true)">' + (opts.confirmLabel || 'Confirm') + '</button>';
+
+  var viewLink = document.getElementById('confirmModalViewLink');
+  var detailsEl = document.getElementById('confirmModalDetails');
+  detailsEl.style.display = 'none';
+  viewLink.textContent = '\u{1F441} View Existing Booking';
+  if (opts.detailsHtml) {
+    detailsEl.innerHTML = opts.detailsHtml;
+    viewLink.style.display = 'inline-block';
+  } else {
+    detailsEl.innerHTML = '';
+    viewLink.style.display = 'none';
+  }
+
   _confirmModalCallback = onConfirm;
   document.getElementById('confirmModalOverlay').classList.add('show');
+}
+
+function toggleConflictDetails(event) {
+  if (event) event.preventDefault();
+  var detailsEl = document.getElementById('confirmModalDetails');
+  var link = document.getElementById('confirmModalViewLink');
+  var isOpen = detailsEl.style.display !== 'none';
+  detailsEl.style.display = isOpen ? 'none' : 'block';
+  link.textContent = isOpen ? '\u{1F441} View Existing Booking' : '\u{1F441} Hide Booking Details';
 }
 
 function openAlertModal(message, onClose, opts) {
@@ -641,6 +663,8 @@ function openAlertModal(message, onClose, opts) {
   document.getElementById('confirmModalMessage').textContent = message;
   document.getElementById('confirmModalFooter').innerHTML =
     '<button type="button" class="btn-primary" style="flex:1;" onclick="_confirmModalRespond(true)">OK</button>';
+  document.getElementById('confirmModalViewLink').style.display = 'none';
+  document.getElementById('confirmModalDetails').style.display = 'none';
   _confirmModalCallback = onClose || null;
   document.getElementById('confirmModalOverlay').classList.add('show');
 }
@@ -706,7 +730,16 @@ async function handleSubmit(event) {
     var conflictMsg = _venueConflict.count === 1
       ? 'This venue already has a booking on this date. Create another booking here anyway?'
       : 'This venue already has ' + _venueConflict.count + ' bookings on this date — this would be a double/triple booking. Create another booking here anyway?';
-    openConfirmModal(conflictMsg, function() { _submitBooking(pct); }, { title: '&#9888; Possible Duplicate Booking', confirmLabel: 'Create Anyway' });
+    var detailsHtml = (_venueConflict.matches || []).map(function(b) {
+      var time = b.startTime ? (' at ' + _cbCleanTime(b.startTime)) : '';
+      var status = b.status ? ' &mdash; <strong>' + _cbEsc(b.status) + '</strong>' : '';
+      return '&bull; <strong>' + _cbEsc(b.bandName || 'Unknown band') + '</strong>' + time + status;
+    }).join('<br>');
+    openConfirmModal(conflictMsg, function() { _submitBooking(pct); }, {
+      title: '&#9888; Possible Duplicate Booking',
+      confirmLabel: 'Create Anyway',
+      detailsHtml: detailsHtml
+    });
     return false;
   }
 
