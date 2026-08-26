@@ -30,17 +30,38 @@ window.onload = function() {
   load();
 };
 
+var allVenuesRaw = [];
+
 function load() {
   callApi('api_getVenuesFullData', []).then(function(data) {
-    var all = Array.isArray(data) ? data : [];
-    // Private Parties and Festivals are booking-only entries, not real
-    // venues — keep them out of the directory.
-    allVenues = all.filter(function(v) { return !v.category || v.category === 'Club'; });
-    buildStates(); stats(); filter();
+    allVenuesRaw = Array.isArray(data) ? data : [];
+    applyDirectoryCategory();
   }).catch(function(err) {
     document.getElementById('tableWrapper').innerHTML =
       '<div class="empty-state"><h3>Error</h3><p>' + (err ? err.message : 'Unknown') + '</p></div>';
   });
+}
+
+// Derives allVenues from the full unfiltered set based on whichever
+// category is currently selected (Club by default), then rebuilds
+// everything downstream that depends on it.
+function applyDirectoryCategory() {
+  var category = document.getElementById('filterCategory').value;
+  allVenues = allVenuesRaw.filter(function(v) {
+    return category === 'Club' ? (!v.category || v.category === 'Club') : v.category === category;
+  });
+  var labelText = category === 'Club' ? 'Total Venues' : (category === 'Festival' ? 'Total Festivals' : 'Total Private Parties');
+  document.getElementById('statTotalLabel').textContent = labelText;
+  // States available differ by category — rebuild that dropdown's options.
+  var stSel = document.getElementById('filterState');
+  stSel.innerHTML = '<option value="">All States</option>';
+  buildStates();
+  stats();
+  filter();
+}
+
+function switchDirectoryCategory() {
+  applyDirectoryCategory();
 }
 
 function buildStates() {
@@ -121,15 +142,18 @@ function lcBadge(ds) {
 }
 
 function draw() {
+  var category = document.getElementById('filterCategory').value;
+  var noun = category === 'Club' ? 'venues' : (category === 'Festival' ? 'festivals' : 'private parties');
+  var nameHeader = category === 'Club' ? 'Venue Name' : (category === 'Festival' ? 'Festival Name' : 'Party Name');
   document.getElementById('resultsCount').textContent =
-    'Showing ' + filteredVenues.length + ' of ' + allVenues.length + ' venues';
+    'Showing ' + filteredVenues.length + ' of ' + allVenues.length + ' ' + noun;
   if (!filteredVenues.length) {
     document.getElementById('tableWrapper').innerHTML =
-      '<div class="empty-state"><h3>No venues found</h3><p>Try adjusting filters</p></div>';
+      '<div class="empty-state"><h3>No ' + noun + ' found</h3><p>Try adjusting filters</p></div>';
     return;
   }
   var h = '<table><thead><tr>';
-  h += '<th onclick="setSort(0)">Venue Name &#x21D5;</th>';
+  h += '<th onclick="setSort(0)">' + nameHeader + ' &#x21D5;</th>';
   h += '<th onclick="setSort(1)">City / State &#x21D5;</th>';
   h += '<th onclick="setSort(2)">Contact &#x21D5;</th>';
   h += '<th onclick="setSort(3)">Cap. &#x21D5;</th>';
@@ -142,7 +166,7 @@ function draw() {
   for (var i=0; i<filteredVenues.length; i++) {
     var v = filteredVenues[i];
     h += '<tr>';
-    h += '<td><strong>' + e(v.name) + '</strong>' + (v.preferredGenres ? '<br><small style="color:#666">' + e(v.preferredGenres) + '</small>' : '') + '</td>';
+    h += '<td><strong>' + e(v.name) + '</strong>' + (v.companyName ? '<br><small style="color:#666">' + e(v.companyName) + '</small>' : (v.preferredGenres ? '<br><small style="color:#666">' + e(v.preferredGenres) + '</small>' : '')) + '</td>';
     h += '<td>' + e(v.city) + (v.state ? ', '+e(v.state) : '') + '</td>';
     h += '<td>' + e(v.contact) + (v.phone ? '<br><small style="color:#666">'+e(v.phone)+'</small>' : '') + '</td>';
     h += '<td>' + (v.capacity||'-') + '</td>';
@@ -170,6 +194,9 @@ function vView(i) {
   var v = filteredVenues[i]; if (!v) return;
   document.getElementById('modalVenueName').textContent = v.name || '';
   var h = '';
+  if (v.category && v.category !== 'Club') {
+    h += sect('Booking Info', [dr('Category', e(v.category)), v.companyName ? dr('Company Name', e(v.companyName)) : ''].filter(Boolean));
+  }
   h += sect('Contact', [dr('Contact',e(v.contact)||'-'), dr('Email', v.email ? '<a class="link" href="mailto:'+v.email+'">'+e(v.email)+'</a>' : '-'), dr('Phone',e(v.phone)||'-'), dr('Address',[v.address,v.city,v.state,v.zip].filter(Boolean).map(e).join(', ')||'-')]);
   h += sect('Venue Details', [dr('Capacity',e(v.capacity)||'-'), dr('Rating',rBadge(v.rating)), dr('Pay Budget',v.payRateBudget?'$'+e(String(v.payRateBudget)):'-'), dr('Has Sound',ynBadge(v.hasSound)), dr('Has Lighting',ynBadge(v.hasLighting)), dr('Exclusivity',e(v.exclusivity)||'-')]);
   h += sect('Preferences', [dr('Genres',e(v.preferredGenres)||'-'), dr('Band Sizes',e(v.prefBandSizes)||'-'), dr('Min Rating',e(v.minBandRating)||'Any'), dr('Min Draw',v.minDraw?e(String(v.minDraw)):'-'), dr('Travel',e(v.travelPref)||'Any')]);
