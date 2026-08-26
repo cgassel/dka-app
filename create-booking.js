@@ -560,8 +560,22 @@ function _cbEsc(s) {
 
 function _cbCleanTime(t) {
   if (!t) return '';
-  var m = String(t).match(/^(\d{1,2}):(\d{2})/);
-  if (!m) return String(t);
+  var s = String(t);
+  // Google Sheets stores time-only cells internally with a placeholder
+  // date of Dec 30, 1899 — if that (or a raw "GMT" Date string) comes
+  // through, pull just the HH:MM out of it rather than showing the whole
+  // bogus date.
+  if (s.indexOf('1899') !== -1 || s.indexOf('GMT') !== -1) {
+    var mm = s.match(/(\d{1,2}):(\d{2})/);
+    if (mm) {
+      var hh = parseInt(mm[1], 10), mnn = mm[2], app = hh >= 12 ? 'PM' : 'AM';
+      hh = hh % 12 || 12;
+      return hh + ':' + mnn + ' ' + app;
+    }
+    return '';
+  }
+  var m = s.match(/^(\d{1,2}):(\d{2})/);
+  if (!m) return s;
   var h = parseInt(m[1], 10), mn = m[2], ap = h >= 12 ? 'PM' : 'AM';
   h = h % 12 || 12;
   return h + ':' + mn + ' ' + ap;
