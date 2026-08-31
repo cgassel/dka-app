@@ -6,7 +6,7 @@ var contractAgentId   = sessionStorage.getItem('dka_id');
 var contractAgentName = sessionStorage.getItem('dka_name') || 'Contract Agent';
 var pendingContracts   = [];
 var attentionContracts = [];
-var currentQueue = 'pending';
+var notifData = [];
 
 (function checkSession() {
   if (sessionStorage.getItem('dka_role') !== 'contractagent' || !contractAgentId) {
@@ -16,8 +16,33 @@ var currentQueue = 'pending';
 
 window.onload = function() {
   document.getElementById('agentNameLabel').textContent = contractAgentName;
+  document.getElementById('dateText').textContent = new Date().toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
   loadBothQueues();
+  loadNotifications();
 };
+
+function loadBothQueues() {
+  Promise.all([
+    callApi('api_getPendingContractReviews', []).catch(function() { return []; }),
+    callApi('api_getContractsNeedingAttention', []).catch(function() { return []; })
+  ]).then(function(results) {
+    pendingContracts   = results[0] || [];
+    attentionContracts = results[1] || [];
+    updateStats();
+    renderPendingList();
+    renderAttentionList();
+    _checkDeepLink();
+  }).catch(function(e) {
+    showToast('Error loading contracts: ' + e.message, 'error');
+  });
+}
+
+function updateStats() {
+  document.getElementById('statPending').textContent   = pendingContracts.length;
+  document.getElementById('statAttention').textContent = attentionContracts.length;
+  document.getElementById('pendingBadge').textContent   = pendingContracts.length;
+  document.getElementById('attentionBadge').textContent = attentionContracts.length;
+}
 
 // Supports links from the "new message" notification email:
 // contract-review-dashboard.html?openContract=X&channel=band|venue|agent
@@ -27,87 +52,31 @@ function _checkDeepLink() {
   var channel       = params.get('channel');
   if (!openContract) return;
 
-  switchQueue('attention');
   var idx = attentionContracts.findIndex(function(c) {
     return String(c.contractId) === String(openContract) && (!channel || c.channel === channel);
   });
   if (idx !== -1) {
     toggleAttentionCard(idx);
+    setTimeout(function() {
+      document.getElementById('a-card-' + idx).scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 150);
   } else {
     showToast('That conversation is no longer open — it may have already been handled.', 'error');
   }
-  // Clean the URL so refreshing doesn't re-trigger this.
   if (window.history && window.history.replaceState) {
     window.history.replaceState({}, '', window.location.pathname);
   }
 }
 
-function loadBothQueues() {
-  Promise.all([
-    callApi('api_getPendingContractReviews', []).catch(function() { return []; }),
-    callApi('api_getContractsNeedingAttention', []).catch(function() { return []; })
-  ]).then(function(results) {
-    pendingContracts   = results[0] || [];
-    attentionContracts = results[1] || [];
-    updateTabCounts();
-    renderQueueBanner();
-    renderList();
-    _checkDeepLink();
-  }).catch(function(e) {
-    showToast('Error loading contracts: ' + e.message, 'error');
-  });
-}
-
-function updateTabCounts() {
-  document.getElementById('pendingCount').textContent   = pendingContracts.length;
-  document.getElementById('attentionCount').textContent = attentionContracts.length;
-}
-
-function switchQueue(queue) {
-  currentQueue = queue;
-  document.getElementById('tabPending').classList.toggle('active', queue === 'pending');
-  document.getElementById('tabAttention').classList.toggle('active', queue === 'attention');
-  renderQueueBanner();
-  renderList();
-}
-
-function renderQueueBanner() {
-  var banner = document.getElementById('queueBanner');
-  var title  = document.getElementById('queueTitle');
-  var sub    = document.getElementById('queueSub');
-  var list   = currentQueue === 'pending' ? pendingContracts : attentionContracts;
-  var n      = list.length;
-
-  if (n === 0) {
-    banner.classList.add('empty');
-    title.textContent = 'All caught up';
-    sub.textContent = currentQueue === 'pending'
-      ? 'No contracts are currently awaiting review.'
-      : 'No open questions or change requests right now.';
-  } else {
-    banner.classList.remove('empty');
-    if (currentQueue === 'pending') {
-      title.textContent = n + ' contract' + (n === 1 ? '' : 's') + ' awaiting review';
-      sub.textContent = 'Review the language below, edit anything that needs it, then send.';
-    } else {
-      title.textContent = n + ' contract' + (n === 1 ? '' : 's') + ' need' + (n === 1 ? 's' : '') + ' your attention';
-      sub.textContent = 'Someone is waiting on a reply, a change, or both.';
-    }
-  }
-}
-
-function renderList() {
-  if (currentQueue === 'pending') renderPendingList();
-  else renderAttentionList();
-}
+// ── Pending review (new bookings, never sent) ───────────────────────────────
 
 function renderPendingList() {
-  var container = document.getElementById('listContainer');
+  var container = document.getElementById('pendingListContainer');
 
   if (pendingContracts.length === 0) {
     container.innerHTML =
       '<div class="empty-state">' +
-        '<div class="empty-state-icon">&#9989;</div>' +
+        '<div class="empty-icon">&#9989;</div>' +
         '<p>Nothing to review right now. New bookings will show up here automatically.</p>' +
       '</div>';
     return;
@@ -143,22 +112,51 @@ function renderPendingList() {
         '</div>' +
       '</div>';
   });
-  document.getElementById('listContainer').innerHTML = html;
+  container.innerHTML = html;
 }
 
 function togglePendingCard(idx) {
   toggleAnyCard('p-card-' + idx);
 }
 
-// ── Needs Attention queue ───────────────────────────────────────────────────
+async function approveAndSend(idx) {
+  var c = pendingContracts[idx];
+  if (!c) return;
+
+  var textEl = document.getElementById('contractText-' + idx);
+  var finalText = textEl.value;
+
+  if (!c.bandEmail && !c.venueEmail) {
+    showToast('Neither the band nor venue has an email on file — nothing to send.', 'error');
+    return;
+  }
+
+  var btn = document.getElementById('approveBtn-' + idx);
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+
+  try {
+    await callApi('api_approveAndSendContract', [c.contractId, finalText, contractAgentId, contractAgentName]);
+    showToast('Contract sent to band and venue.', 'success');
+    pendingContracts.splice(idx, 1);
+    updateStats();
+    renderPendingList();
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = '\u2713 Approve & Send to Band + Venue';
+    showToast('Error sending contract: ' + e.message, 'error');
+  }
+}
+
+// ── Needs Attention (open conversations) ────────────────────────────────────
 
 function renderAttentionList() {
-  var container = document.getElementById('listContainer');
+  var container = document.getElementById('attentionListContainer');
 
   if (attentionContracts.length === 0) {
     container.innerHTML =
       '<div class="empty-state">' +
-        '<div class="empty-state-icon">&#128172;</div>' +
+        '<div class="empty-icon">&#128172;</div>' +
         '<p>No open conversations right now.</p>' +
       '</div>';
     return;
@@ -199,7 +197,7 @@ function renderAttentionList() {
         '</div>' +
       '</div>';
   });
-  document.getElementById('listContainer').innerHTML = html;
+  container.innerHTML = html;
 }
 
 function toggleAttentionCard(idx) {
@@ -212,10 +210,7 @@ function toggleAnyCard(cardId) {
   var card = document.getElementById(cardId);
   var wasOpen = card.classList.contains('open');
   document.querySelectorAll('.contract-card.open').forEach(function(c) { c.classList.remove('open'); });
-  if (!wasOpen) {
-    card.classList.add('open');
-    setTimeout(function() { card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 100);
-  }
+  if (!wasOpen) card.classList.add('open');
 }
 
 function loadThread(idx) {
@@ -230,7 +225,6 @@ function loadThread(idx) {
 
 function renderThread(idx, msgs) {
   var el = document.getElementById('thread-' + idx);
-  var c  = attentionContracts[idx];
   var roleNames = { band: 'Band', venue: 'Venue', agent: 'Booking Agent', contractagent: contractAgentName };
   if (msgs.length === 0) {
     el.innerHTML = '<div class="msg-empty">No messages.</div>';
@@ -293,9 +287,8 @@ async function reviseAndSend(idx) {
     await callApi('api_reviseAndResendContract', [c.contractId, finalText, contractAgentId, contractAgentName]);
     showToast('Revised contract sent to band and venue.', 'success');
     attentionContracts.splice(idx, 1);
-    updateTabCounts();
-    renderQueueBanner();
-    renderList();
+    updateStats();
+    renderAttentionList();
   } catch (e) {
     btn.disabled = false;
     btn.textContent = '\u2713 Send Revised Contract for Signatures';
@@ -303,36 +296,96 @@ async function reviseAndSend(idx) {
   }
 }
 
-// ── Pending review: approve first-time send ─────────────────────────────────
+// ── Notifications (Contract Agent's own feed) ───────────────────────────────
 
-async function approveAndSend(idx) {
-  var c = pendingContracts[idx];
-  if (!c) return;
+function loadNotifications() {
+  callApi('api_getContractAgentNotifications', [contractAgentId]).then(function(n) {
+    notifData = n || [];
+    renderNotifBell();
+    renderNotifDrawer();
+  }).catch(function() {});
+}
 
-  var textEl = document.getElementById('contractText-' + idx);
-  var finalText = textEl.value;
+function renderNotifBell() {
+  var u = notifData.filter(function(n) { return !n.isRead; }).length;
+  var btn = document.getElementById('notifBellBtn');
+  var badge = document.getElementById('notifCount');
+  if (u > 0) {
+    badge.textContent = u > 9 ? '9+' : String(u);
+    badge.style.display = 'flex';
+    btn.classList.add('has-unread');
+  } else {
+    badge.style.display = 'none';
+    btn.classList.remove('has-unread');
+  }
+}
 
-  if (!c.bandEmail && !c.venueEmail) {
-    showToast('Neither the band nor venue has an email on file — nothing to send.', 'error');
+function renderNotifDrawer() {
+  var u = notifData.filter(function(n) { return !n.isRead; }).length;
+  var badge = document.getElementById('drawerUnreadBadge');
+  var mb = document.getElementById('markAllBtn');
+  if (u > 0) { badge.textContent = u + ' new'; badge.style.display = 'inline-block'; mb.disabled = false; }
+  else { badge.style.display = 'none'; mb.disabled = true; }
+
+  var list = document.getElementById('notifList');
+  if (!notifData.length) {
+    list.innerHTML = '<div class="notif-empty"><div style="font-size:2rem;">&#128277;</div><p>No notifications yet</p></div>';
     return;
   }
 
-  var btn = document.getElementById('approveBtn-' + idx);
-  btn.disabled = true;
-  btn.textContent = 'Sending…';
+  var h = '';
+  notifData.forEach(function(n) {
+    var ts = n.timestamp ? timeAgo(new Date(n.timestamp)) : '';
+    h += '<div class="notif-item' + (n.isRead ? '' : ' unread') + '">';
+    h += '<div class="notif-icon">' + (n.icon || '&#128276;') + '</div>';
+    h += '<div class="notif-body"><div class="notif-text">' + n.message + '</div>';
+    h += '<div class="notif-meta">' + ts + '</div></div>';
+    if (!n.isRead) h += '<div class="notif-unread-dot"></div>';
+    h += '</div>';
+  });
+  list.innerHTML = h;
+}
 
-  try {
-    await callApi('api_approveAndSendContract', [c.contractId, finalText, contractAgentId, contractAgentName]);
-    showToast('Contract sent to band and venue.', 'success');
-    pendingContracts.splice(idx, 1);
-    updateTabCounts();
-    renderQueueBanner();
-    renderList();
-  } catch (e) {
-    btn.disabled = false;
-    btn.textContent = '\u2713 Approve & Send to Band + Venue';
-    showToast('Error sending contract: ' + e.message, 'error');
-  }
+function toggleNotifDrawer() {
+  var d = document.getElementById('notifDrawer');
+  var b = document.getElementById('notifBackdrop');
+  if (d.classList.contains('open')) { closeNotifDrawer(); return; }
+  d.classList.add('open'); b.classList.add('open');
+  setTimeout(function() {
+    var ids = notifData.filter(function(n) { return !n.isRead; }).map(function(n) { return n.id; });
+    if (ids.length > 0) {
+      callApi('api_markContractNotificationsRead', [contractAgentId, ids]).then(function() {
+        notifData.forEach(function(n) { n.isRead = true; });
+        renderNotifBell(); renderNotifDrawer();
+      }).catch(function() {});
+    }
+  }, 1200);
+}
+
+function closeNotifDrawer() {
+  document.getElementById('notifDrawer').classList.remove('open');
+  document.getElementById('notifBackdrop').classList.remove('open');
+}
+
+function markAllRead() {
+  var ids = notifData.filter(function(n) { return !n.isRead; }).map(function(n) { return n.id; });
+  if (!ids.length) return;
+  document.getElementById('markAllBtn').disabled = true;
+  callApi('api_markContractNotificationsRead', [contractAgentId, ids]).then(function() {
+    notifData.forEach(function(n) { n.isRead = true; });
+    renderNotifBell(); renderNotifDrawer();
+  }).catch(function() {});
+}
+
+function timeAgo(date) {
+  var diff = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (diff < 60) return 'just now';
+  if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+  var days = Math.floor(diff / 86400);
+  if (days === 1) return 'yesterday';
+  if (days < 7) return days + 'd ago';
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 // ── Add Contract Agent ───────────────────────────────────────────────────────
@@ -341,11 +394,11 @@ function openAddAgentModal() {
   document.getElementById('newAgentName').value = '';
   document.getElementById('newAgentEmail').value = '';
   document.getElementById('newAgentPassword').value = '';
-  document.getElementById('addAgentModalOverlay').classList.add('show');
+  document.getElementById('addAgentModalOverlay').classList.add('open');
 }
 
 function closeAddAgentModal() {
-  document.getElementById('addAgentModalOverlay').classList.remove('show');
+  document.getElementById('addAgentModalOverlay').classList.remove('open');
 }
 
 async function submitAddAgent() {
@@ -377,7 +430,7 @@ async function submitAddAgent() {
 function showToast(msg, type) {
   var t = document.getElementById('toast');
   t.textContent = msg;
-  t.className = 'toast ' + (type || 'success');
+  t.className = 'toast-msg' + (type === 'error' ? ' error' : '');
   void t.offsetWidth;
   t.classList.add('show');
   setTimeout(function() { t.classList.remove('show'); }, 4000);
