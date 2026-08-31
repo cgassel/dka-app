@@ -9,6 +9,12 @@
 
 var agentId = sessionStorage.getItem('dka_id');
 
+// See create-booking.js for why this prefix exists — Contract Agent and
+// booking Agent IDs live in separate sheets but can share the same number.
+var _sessionRole        = sessionStorage.getItem('dka_role');
+var _effectiveAgentId   = (_sessionRole === 'contractagent') ? ('CA' + agentId) : agentId;
+var _effectiveAgentName = (_sessionRole === 'contractagent') ? (sessionStorage.getItem('dka_name') || 'Contract Agent') : ('Agent ' + agentId);
+
 (function checkSession() {
   if (!sessionStorage.getItem('dka_role') || !agentId) {
     window.location.href = 'index.html';
@@ -145,7 +151,7 @@ async function handleSubmit(event) {
   };
 
   try {
-    await callApi('api_addBand', [bandData, agentId, 'Agent ' + agentId]);
+    await callApi('api_addBand', [bandData, _effectiveAgentId, _effectiveAgentName]);
     document.getElementById('loading').style.display = 'none';
     document.getElementById('successMsg').style.display = 'block';
     window.scrollTo(0, 0);
