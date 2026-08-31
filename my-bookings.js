@@ -19,8 +19,11 @@ window.onload = function() {
   if (!agentId) {
     window.location.href = 'index.html'; return;
   }
+  // See create-booking.js for why this prefix exists — Contract Agent and
+  // booking Agent IDs live in separate sheets but can share the same number.
+  var effectiveId = (sessionStorage.getItem('dka_role') === 'contractagent') ? ('CA' + agentId) : agentId;
 
-  callApi('api_getAgentBookingsFull', [agentId]).then(function(bookings) {
+  callApi('api_getAgentBookingsFull', [effectiveId]).then(function(bookings) {
     allBookings = bookings || [];
     updateStats();
     renderCalendar();
