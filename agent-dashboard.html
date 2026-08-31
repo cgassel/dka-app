@@ -130,6 +130,7 @@
     .loading-text { color:white;font-size:0.92rem;font-weight:600;letter-spacing:0.5px; }
     .toast-msg { position:fixed;bottom:84px;left:50%;transform:translateX(-50%) translateY(40px);background:#2e7d32;color:white;padding:11px 22px;border-radius:24px;font-size:0.92rem;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.25);transition:transform 0.35s ease,opacity 0.35s ease;opacity:0;white-space:nowrap; }
     .toast-msg.show { transform:translateX(-50%) translateY(0);opacity:1; }
+    .toast-msg.error { background:#8B2000; }
 
     .bottom-nav { display:none;position:fixed;bottom:0;left:0;right:0;height:64px;background:var(--bg2);border-top:1px solid var(--border);z-index:150;padding:0 4px;align-items:center;justify-content:space-around;box-shadow:0 -2px 12px rgba(0,0,0,0.08); }
     .bnav-btn { display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;cursor:pointer;padding:6px 8px;border-radius:8px;font-family:'Inter',sans-serif;color:var(--muted);flex:1;min-width:0; }
@@ -389,6 +390,79 @@
       .modal-body { padding:18px 16px 24px; }
       .modal-footer { padding:14px 16px 20px; }
     }
+    /* .spinner was referenced in several places (including the Add Band /
+       Add Venue modals) but never actually had CSS — it's been invisible.
+       Fixed here since it's used by the contract panels below too. */
+    .spinner { width:36px; height:36px; border:3px solid var(--border); border-top-color:var(--bronze1); border-radius:50%; animation:spin 0.8s linear infinite; margin:0 auto 12px; }
+    .loading-block { text-align:center; padding:40px 20px; }
+
+    .panel-badge.attention { background: var(--red); color: #fff; }
+
+    .contract-card { background: var(--card2); border-radius: 12px; margin-bottom: 12px; overflow: hidden; border: 1px solid var(--border); }
+    .contract-card:last-child { margin-bottom: 0; }
+    .contract-card-hdr { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 16px; cursor: pointer; transition: background 0.15s; }
+    .contract-card-hdr:hover { background: rgba(0,0,0,0.02); }
+    .contract-card-title { font-weight: 700; font-size: 0.95rem; color: var(--text); }
+    .channel-pill { display: inline-block; background: var(--bronze2); color: #fff; font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; padding: 2px 8px; border-radius: 10px; margin-left: 6px; vertical-align: middle; }
+    .contract-card-sub { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+    .contract-card-meta { text-align: right; flex-shrink: 0; }
+    .contract-card-date { font-size: 0.8rem; font-weight: 700; color: var(--bronze3); }
+    .contract-card-created { font-size: 0.68rem; color: var(--dim); margin-top: 2px; }
+    .contract-card-chevron { font-size: 0.85rem; color: var(--dim); transition: transform 0.2s; flex-shrink: 0; }
+    .contract-card.open .contract-card-chevron { transform: rotate(90deg); }
+    .contract-card-body { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; background: var(--card); }
+    .contract-card.open .contract-card-body { max-height: 2000px; }
+    .contract-card-body-inner { padding: 16px; border-top: 1px solid var(--border); }
+    .contract-meta-row { display: flex; flex-wrap: wrap; gap: 16px; padding-bottom: 14px; font-size: 0.8rem; }
+    .contract-meta-item .label { color: var(--dim); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
+    .contract-meta-item .value { color: var(--text); font-weight: 600; }
+    .contract-meta-item .value.missing { color: var(--red); font-weight: 500; font-style: italic; }
+    .contract-textarea { width: 100%; min-height: 280px; padding: 14px; border: 1.5px solid var(--border); border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; line-height: 1.6; color: var(--text); background: var(--card2); resize: vertical; margin-bottom: 14px; }
+    .contract-textarea:focus { outline: none; border-color: var(--bronze2); background: var(--card); }
+    .contract-actions { display: flex; gap: 10px; }
+    .btn-approve { flex: 2; padding: 13px 18px; border: none; border-radius: 8px; cursor: pointer; background: var(--bronze2); color: #fff; font-family: 'Inter', sans-serif; font-size: 0.86rem; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; transition: all 0.2s; }
+    .btn-approve:hover:not(:disabled) { background: #8a6014; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(80,50,10,0.3); }
+    .btn-approve:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-collapse { flex: 1; padding: 13px 18px; border: 1.5px solid var(--border); border-radius: 8px; cursor: pointer; background: var(--card); color: var(--muted); font-family: 'Inter', sans-serif; font-size: 0.8rem; font-weight: 600; }
+    .btn-collapse:hover { background: var(--card2); }
+    .btn-delete-contract { flex: 1; padding: 13px 18px; border: 1.5px solid rgba(139,32,0,0.3); border-radius: 8px; cursor: pointer; background: var(--red-bg,rgba(139,32,0,0.08)); color: var(--red); font-family: 'Inter', sans-serif; font-size: 0.8rem; font-weight: 700; }
+    .btn-delete-contract:hover { background: rgba(139,32,0,0.15); }
+    .revise-label { font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: var(--bronze3); margin: 16px 0 8px; }
+
+    .msg-thread { display: flex; flex-direction: column; gap: 10px; padding-bottom: 14px; max-height: 300px; overflow-y: auto; }
+    .msg-empty { text-align: center; color: var(--dim); font-size: 0.82rem; font-style: italic; padding: 10px 0; }
+    .msg-bubble { max-width: 82%; padding: 10px 14px; border-radius: 12px; font-size: 0.82rem; line-height: 1.5; }
+    .msg-bubble.mine { align-self: flex-end; background: var(--bronze-bg); border: 1.5px solid #d4a030; }
+    .msg-bubble.theirs { align-self: flex-start; background: var(--card2); border: 1.5px solid var(--border); }
+    .msg-bubble.system { align-self: center; background: var(--green-bg,rgba(46,125,92,0.1)); border: 1px solid #b6dfc0; color: var(--green,#2e7d5c); font-size: 0.75rem; font-style: italic; text-align: center; max-width: 95%; }
+    .msg-meta { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: var(--dim); margin-bottom: 4px; }
+    .msg-compose { display: flex; gap: 8px; padding-bottom: 14px; }
+    .msg-input { flex: 1; padding: 10px 13px; border: 1.5px solid var(--border); border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 0.82rem; resize: vertical; min-height: 42px; }
+    .msg-input:focus { outline: none; border-color: var(--bronze2); }
+    .btn-msg-send { padding: 0 16px; background: var(--bronze2); color: #fff; border: none; border-radius: 8px; font-size: 0.78rem; font-weight: 700; cursor: pointer; }
+    .btn-msg-send:hover:not(:disabled) { background: #8a6014; }
+    .btn-msg-send:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    @media (max-width: 640px) {
+      .contract-actions { flex-direction: column; }
+      .msg-compose { flex-direction: column; }
+      .msg-bubble { max-width: 92%; }
+    }
+
+    .app-modal-overlay { display:none; position:fixed; inset:0; background:rgba(20,14,4,0.65); z-index:600; align-items:flex-start; justify-content:center; padding:20px 16px 40px; overflow-y:auto; }
+    .app-modal-overlay.show { display:flex; }
+    .app-modal-card { background:var(--card); border-radius:16px; width:100%; max-width:440px; box-shadow:0 8px 40px rgba(0,0,0,0.4); overflow:hidden; margin:auto; }
+    .app-modal-header { background:linear-gradient(160deg,#3a2608 0%,#6a4a10 10%,#a07020 20%,#d4a030 30%,#f0c050 42%,#e8b838 50%,#c08820 60%,#906010 70%,#6a4810 82%,#4a3008 90%,#2e1e06 100%); padding:18px 22px; }
+    .app-modal-header h2 { color:#fff; font-size:1.05rem; font-weight:700; }
+    .app-modal-body { padding:20px 22px; }
+    .app-modal-footer { display:flex; gap:10px; padding:0 22px 22px; }
+    .app-modal-footer button { flex:1; padding:12px 18px; border:none; border-radius:8px; font-size:0.88rem; font-weight:700; cursor:pointer; }
+    .app-modal-btn-primary { background:var(--bronze2); color:#fff; }
+    .app-modal-btn-secondary { background:#f0ebe0; color:#555; }
+    @media (max-width:640px) {
+      .app-modal-overlay { padding:0; align-items:stretch; }
+      .app-modal-card { max-width:100%; min-height:100%; border-radius:0; display:flex; flex-direction:column; justify-content:center; }
+    }
   </style>
 </head>
 <body>
@@ -457,6 +531,41 @@
         <div class="stat-label">Venues Need Contact</div>
         <div class="stat-value loading-shimmer" id="statContactAlert">0</div>
         <div class="stat-sub">Silent 30+ days</div>
+      </div>
+    </div>
+
+    <div id="contractPanelsSection" style="display:none;">
+      <div class="stats-grid" style="margin-bottom:16px;">
+        <div class="stat-card blue">
+          <div class="stat-icon">&#128203;</div>
+          <div class="stat-label">Awaiting Review</div>
+          <div class="stat-value" id="statPending">&#8211;</div>
+          <div class="stat-sub">New bookings, never sent</div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-icon">&#128172;</div>
+          <div class="stat-label">Needs Attention</div>
+          <div class="stat-value" id="statAttention">&#8211;</div>
+          <div class="stat-sub">Open questions or requests</div>
+        </div>
+      </div>
+
+      <div class="panel-full">
+        <div class="panel-header">
+          <div class="panel-title">&#128203; New Bookings Awaiting Review <span class="panel-badge" id="pendingBadge">&#8211;</span></div>
+        </div>
+        <div class="panel-body" id="pendingListContainer">
+          <div class="loading-block"><div class="spinner"></div><p>Loading&#8230;</p></div>
+        </div>
+      </div>
+
+      <div class="panel-full">
+        <div class="panel-header">
+          <div class="panel-title">&#128172; Needs Attention <span class="panel-badge attention" id="attentionBadge">&#8211;</span></div>
+        </div>
+        <div class="panel-body" id="attentionListContainer">
+          <div class="loading-block"><div class="spinner"></div><p>Loading&#8230;</p></div>
+        </div>
       </div>
     </div>
 
@@ -842,6 +951,17 @@
         style="background:none;border:none;color:#888;font-size:0.85rem;cursor:pointer;font-family:inherit;">
         Cancel
       </button>
+    </div>
+  </div>
+
+  <div class="app-modal-overlay" id="dashConfirmOverlay">
+    <div class="app-modal-card" style="max-width:400px;">
+      <div class="app-modal-header"><h2 id="dashConfirmTitle">Please Confirm</h2></div>
+      <div class="app-modal-body"><p id="dashConfirmMessage" style="margin:0;line-height:1.6;color:var(--text);"></p></div>
+      <div class="app-modal-footer">
+        <button type="button" class="app-modal-btn-secondary" onclick="_dashConfirmRespond(false)">Cancel</button>
+        <button type="button" class="app-modal-btn-primary" id="dashConfirmOkBtn" onclick="_dashConfirmRespond(true)">Confirm</button>
+      </div>
     </div>
   </div>
 
