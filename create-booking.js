@@ -14,6 +14,16 @@ var isSubmitting  = false;
 
 var agentId = sessionStorage.getItem('dka_id');
 
+// Contract Agents live in a completely separate sheet/ID space from
+// booking Agents — their numeric IDs can collide (both start counting
+// from 1). When a Contract Agent creates a booking, everything written as
+// "who booked this" needs to be unambiguous, since it's later used to
+// resolve who gets emailed a copy when a contract is sent. The "CA"
+// prefix keeps that lookup pointed at the right sheet.
+var _sessionRole        = sessionStorage.getItem('dka_role');
+var _effectiveAgentId   = (_sessionRole === 'contractagent') ? ('CA' + agentId) : agentId;
+var _effectiveAgentName = (_sessionRole === 'contractagent') ? (sessionStorage.getItem('dka_name') || 'Contract Agent') : ('Agent ' + agentId);
+
 var _prefill = { venueId:'', bandId:'', date:'', venueName:'', bandName:'' };
 var _hasPrefill = false;
 
@@ -810,7 +820,7 @@ async function _resolveVenue(category) {
     contactName: '', email: '', phone: '', address: address, city: city, state: state, zip: '',
     capacity: 0, payRateBudget: 0
   };
-  var result = await callApi('api_addVenue', [venueData, agentId, 'Agent ' + agentId]);
+  var result = await callApi('api_addVenue', [venueData, _effectiveAgentId, _effectiveAgentName]);
   return {
     venueId: result.venueId, venueName: name,
     venueEmail: '', venueAddress: address, venueCity: city, venueState: state, venuePhone: ''
@@ -872,7 +882,7 @@ async function _submitSingleBooking(shared, contractIsPending) {
     contractPending: contractIsPending
   });
 
-  var result = await callApi('api_createBooking', [bookingData, agentId, 'Agent ' + agentId]);
+  var result = await callApi('api_createBooking', [bookingData, _effectiveAgentId, _effectiveAgentName]);
 
   var contractNoteEl = document.getElementById('successContractNote');
   if (contractIsPending && result && result.bookingId) {
@@ -908,7 +918,7 @@ async function _submitFestivalLineup(shared, contractIsPending) {
     });
 
     try {
-      var result = await callApi('api_createBooking', [bookingData, agentId, 'Agent ' + agentId]);
+      var result = await callApi('api_createBooking', [bookingData, _effectiveAgentId, _effectiveAgentName]);
       if (contractIsPending && result && result.bookingId) {
         await _createContractForBooking(bookingData, result.bookingId, true);
       }
@@ -959,7 +969,7 @@ async function _submitBooking(pct) {
       commissionPct: pct,
       notes:        document.getElementById('notes').value,
       sendConfirmEmail: document.getElementById('sendConfirmationEmail').checked,
-      agentId:      String(agentId || '')
+      agentId:      String(_effectiveAgentId || '')
     };
 
     if (category === 'Festival') {
