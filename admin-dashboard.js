@@ -335,3 +335,51 @@ function logout() {
     window.location.href = 'index.html';
   });
 }
+
+// ── Add Contract Agent (Administrator only) ─────────────────────────────────
+
+function openAddContractAgentModal() {
+  document.getElementById('newCAName').value = '';
+  document.getElementById('newCAEmail').value = '';
+  document.getElementById('newCAPassword').value = '';
+  document.getElementById('addContractAgentModalOverlay').classList.add('show');
+}
+
+function closeAddContractAgentModal() {
+  document.getElementById('addContractAgentModalOverlay').classList.remove('show');
+}
+
+async function submitAddContractAgent() {
+  var name = document.getElementById('newCAName').value.trim();
+  var email = document.getElementById('newCAEmail').value.trim();
+  var password = document.getElementById('newCAPassword').value;
+
+  if (!name || !email || !password) {
+    showAdminToast('Please fill in name, email, and password.', 'error');
+    return;
+  }
+
+  var btn = document.getElementById('addCASubmitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Adding\u2026';
+
+  try {
+    await callApi('api_addContractAgent', [{ name: name, email: email, password: password }]);
+    closeAddContractAgentModal();
+    showAdminToast('Contract agent added.', 'success');
+  } catch (e) {
+    showAdminToast('Error adding contract agent: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Add Agent';
+  }
+}
+
+function showAdminToast(msg, type) {
+  var t = document.getElementById('toastMsg');
+  t.textContent = msg;
+  t.className = 'toast-msg' + (type === 'error' ? ' error' : '');
+  void t.offsetWidth;
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 4000);
+}
