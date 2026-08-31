@@ -217,6 +217,7 @@
           } else {
             sessionStorage.setItem('dka_role', t);
             sessionStorage.setItem('dka_id', r.agentId || r.venueId || r.bandId || r.contractAgentId || '');
+            sessionStorage.setItem('dka_name', r.contractAgentName || '');
             var dashboardPages = { agent: 'agent-dashboard.html', venue: 'venue-calendar.html', band: 'band-portal.html', contractagent: 'contract-review-dashboard.html' };
             window.location.href = dashboardPages[t] || (t + '-dashboard.html');
           }
