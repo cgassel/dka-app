@@ -114,6 +114,26 @@
     .refresh-btn:hover { border-color:rgba(240,192,80,0.5); color:rgba(240,192,80,1); }
     .commission-bar-bg   { height:6px; background:var(--border); border-radius:3px; margin-top:5px; }
     .commission-bar-fill { height:6px; background:var(--green); border-radius:3px; transition:width 0.4s ease; }
+    .app-modal-overlay { display:none; position:fixed; inset:0; background:rgba(20,14,4,0.65); z-index:500; align-items:flex-start; justify-content:center; padding:20px 16px 40px; overflow-y:auto; }
+    .app-modal-overlay.show { display:flex; }
+    .app-modal-card { background:var(--card); border-radius:16px; width:100%; max-width:440px; box-shadow:0 8px 40px rgba(0,0,0,0.4); overflow:hidden; margin:auto; }
+    .app-modal-header { background:linear-gradient(160deg,#3a2608 0%,#6a4a10 10%,#a07020 20%,#d4a030 30%,#f0c050 42%,#e8b838 50%,#c08820 60%,#906010 70%,#6a4810 82%,#4a3008 90%,#2e1e06 100%); padding:18px 22px; }
+    .app-modal-header h2 { color:#fff; font-size:1.05rem; font-weight:700; }
+    .app-modal-body { padding:20px 22px; }
+    .app-modal-body .form-group { margin-bottom:14px; }
+    .app-modal-body label { display:block; font-size:0.78rem; font-weight:700; color:var(--muted); margin-bottom:4px; }
+    .app-modal-body input { width:100%; padding:10px 12px; border:1.5px solid var(--border); border-radius:7px; font-size:0.9rem; font-family:'Inter',sans-serif; }
+    .app-modal-footer { display:flex; gap:10px; padding:0 22px 22px; }
+    .app-modal-footer button { flex:1; padding:12px 18px; border:none; border-radius:8px; font-size:0.88rem; font-weight:700; cursor:pointer; }
+    .app-modal-btn-primary { background:var(--bronze2); color:#fff; }
+    .app-modal-btn-secondary { background:#f0ebe0; color:#555; }
+    .toast-msg { position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(40px);background:#2e7d32;color:white;padding:11px 22px;border-radius:24px;font-size:0.92rem;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.25);transition:transform 0.35s ease,opacity 0.35s ease;opacity:0;white-space:nowrap; }
+    .toast-msg.show { transform:translateX(-50%) translateY(0);opacity:1; }
+    .toast-msg.error { background:#8B2000; }
+    @media (max-width:640px) {
+      .app-modal-overlay { padding:0; align-items:stretch; }
+      .app-modal-card { max-width:100%; min-height:100%; border-radius:0; display:flex; flex-direction:column; justify-content:center; }
+    }
   </style>
 </head>
 <body>
@@ -128,6 +148,7 @@
       <span class="admin-pill">Admin</span>
     </div>
     <div class="topbar-right">
+      <button class="btn-topbar" onclick="openAddContractAgentModal()">+ Add Contract Agent</button>
       <button class="refresh-btn" onclick="refreshAll()">&#x21BB; Refresh</button>
       <button class="btn-topbar" onclick="logout()">Sign Out</button>
     </div>
@@ -212,7 +233,36 @@
     <div class="loading-text" id="loadingText">Loading&#x2026;</div>
   </div>
 
+  <div class="app-modal-overlay" id="addContractAgentModalOverlay">
+    <div class="app-modal-card">
+      <div class="app-modal-header"><h2>Add Contract Agent</h2></div>
+      <div class="app-modal-body">
+        <div class="add-agent-form">
+          <div class="form-group">
+            <label>Name</label>
+            <input type="text" id="newCAName" placeholder="Jane Smith">
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="newCAEmail" placeholder="jane@example.com">
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="text" id="newCAPassword" placeholder="Temporary password">
+          </div>
+        </div>
+      </div>
+      <div class="app-modal-footer">
+        <button type="button" class="app-modal-btn-secondary" onclick="closeAddContractAgentModal()">Cancel</button>
+        <button type="button" class="app-modal-btn-primary" id="addCASubmitBtn" onclick="submitAddContractAgent()">Add Agent</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-msg" id="toastMsg"></div>
+
   <script src="api.js"></script>
   <script src="admin-dashboard.js"></script>
 </body>
+
 </html>
