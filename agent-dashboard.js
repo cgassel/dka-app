@@ -17,17 +17,31 @@ var commPeriod      = 'week';
 var allOpenSlots    = [];
 var currentSlotWeek = 1;
 
+// Contract Agents use this exact same dashboard — everything a booking
+// Agent has, plus contract review/approval. Their ID lives in a separate
+// sheet from booking Agents and can collide numerically, so "MY stats"
+// calls use a prefixed effective ID (matches the same scheme used when a
+// Contract Agent creates a booking from create-booking.html).
+var isContractAgent     = (sessionStorage.getItem('dka_role') === 'contractagent');
+var _effectiveAgentId   = isContractAgent ? ('CA' + agentId) : agentId;
+var pendingContracts    = [];
+var attentionContracts  = [];
+
 window.addEventListener('load', function() {
   document.getElementById('loadingOverlay').classList.remove('show');
 });
 
 (function init() {
-  if (sessionStorage.getItem('dka_role') !== 'agent' || !agentId) {
+  if (!agentId || (sessionStorage.getItem('dka_role') !== 'agent' && sessionStorage.getItem('dka_role') !== 'contractagent')) {
     window.location.href = 'index.html';
     return;
   }
   var now = new Date();
   document.getElementById('dateText').textContent = now.toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+  if (isContractAgent) {
+    var subEl = document.querySelector('.brand-sub');
+    if (subEl) subEl.textContent = 'Contract Agent';
+  }
 
   var urlParams  = new URLSearchParams(window.location.search);
   var toastParam = urlParams.get('toast');
@@ -36,9 +50,22 @@ window.addEventListener('load', function() {
 
   loadAgentName(agentId);
   loadDashboardData();
+
+  if (isContractAgent) {
+    document.getElementById('contractPanelsSection').style.display = 'block';
+    loadContractQueues();
+  }
 })();
 
 async function loadAgentName(id) {
+  if (isContractAgent) {
+    // Contract Agents live in a different sheet — index.html already
+    // saved their real name to sessionStorage at login.
+    agentName = sessionStorage.getItem('dka_name') || 'Contract Agent';
+    document.getElementById('agentName').textContent   = agentName;
+    document.getElementById('welcomeText').textContent = 'Welcome back, ' + agentName.split(' ')[0] + ' \ud83d\udc4b';
+    return;
+  }
   try {
     var agents = await callApi('api_getAgents', []);
     for (var i = 0; i < agents.length; i++) {
@@ -61,7 +88,7 @@ async function loadDashboardData() {
     var results = await Promise.all([
       callApi('api_getAllBookings', []).catch(function(){ return []; }),
       callApi('api_getBandCommissionMap', []).catch(function(){ return {}; }),
-      callApi('api_getDashboardStats', [agentId]).catch(function(){ return {}; }),
+      callApi('api_getDashboardStats', [_effectiveAgentId]).catch(function(){ return {}; }),
       callApi('api_getVenuesFullData', []).catch(function(){ return []; })
     ]);
     allBookings   = results[0] || [];
@@ -73,7 +100,7 @@ async function loadDashboardData() {
     console.error('loadDashboardData error:', err);
   }
 
-  callApi('api_getAgentNotifications', [agentId]).then(function(n) {
+  callApi('api_getAgentNotifications', [_effectiveAgentId]).then(function(n) {
     notifData = n || [];
     renderNotifBell();
     renderNotifDrawer();
@@ -312,7 +339,7 @@ function toggleNotifDrawer(){
     setTimeout(function(){
       var ids=notifData.filter(function(n){return!n.isRead;}).map(function(n){return n.id;});
       if(ids.length>0){
-        callApi('api_markNotificationsRead',[agentId, ids]).then(function(){
+        callApi('api_markNotificationsRead',[_effectiveAgentId, ids]).then(function(){
           notifData.forEach(function(n){n.isRead=true;});
           renderNotifBell();renderNotifDrawer();
         }).catch(function(){});
@@ -325,7 +352,7 @@ function markAllRead(){
   var ids=notifData.filter(function(n){return!n.isRead;}).map(function(n){return n.id;});
   if(!ids.length)return;
   document.getElementById('markAllBtn').disabled=true;
-  callApi('api_markNotificationsRead',[agentId, ids]).then(function(){
+  callApi('api_markNotificationsRead',[_effectiveAgentId, ids]).then(function(){
     notifData.forEach(function(n){n.isRead=true;});
     renderNotifBell();renderNotifDrawer();
   }).catch(function(){});
@@ -526,9 +553,11 @@ function goToUrl(url, title, subtitle) {
   overlay.style.display = 'flex';
 }
 
-function showDashToast(msg) {
+function showDashToast(msg, type) {
   var t = document.getElementById('toastMsg');
   t.textContent = msg;
+  t.className = 'toast-msg' + (type === 'error' ? ' error' : '');
+  void t.offsetWidth;
   t.classList.add('show');
   setTimeout(function() { t.classList.remove('show'); }, 4000);
 }
@@ -804,4 +833,340 @@ function handleNotifClick(idx) {
     hideLoading();
     showDashToast('Error: ' + err.message);
   });
+}
+
+// ── Custom confirm dialog (never a native browser confirm()) ───────────────
+var _dashConfirmCallback = null;
+
+function showConfirmDialog(message, onConfirm, opts) {
+  opts = opts || {};
+  document.getElementById('dashConfirmTitle').textContent = opts.title || 'Please Confirm';
+  document.getElementById('dashConfirmMessage').textContent = message;
+  document.getElementById('dashConfirmOkBtn').textContent = opts.confirmLabel || 'Confirm';
+  _dashConfirmCallback = onConfirm;
+  document.getElementById('dashConfirmOverlay').classList.add('show');
+}
+
+function _dashConfirmRespond(confirmed) {
+  document.getElementById('dashConfirmOverlay').classList.remove('show');
+  var cb = _dashConfirmCallback;
+  _dashConfirmCallback = null;
+  if (confirmed && typeof cb === 'function') cb();
+}
+
+// ============================================================================
+// CONTRACT REVIEW (Contract Agents only) — Pending Review + Needs Attention
+// queues, thread messaging, approve/revise/delete. Everything in this
+// section only ever runs when isContractAgent is true.
+// ============================================================================
+
+function loadContractQueues() {
+  Promise.all([
+    callApi('api_getPendingContractReviews', []).catch(function() { return []; }),
+    callApi('api_getContractsNeedingAttention', []).catch(function() { return []; })
+  ]).then(function(results) {
+    pendingContracts   = results[0] || [];
+    attentionContracts = results[1] || [];
+    updateContractStats();
+    renderPendingList();
+    renderAttentionList();
+    _checkContractDeepLink();
+  }).catch(function(e) {
+    showDashToast('Error loading contracts: ' + e.message, 'error');
+  });
+}
+
+function updateContractStats() {
+  document.getElementById('statPending').textContent   = pendingContracts.length;
+  document.getElementById('statAttention').textContent = attentionContracts.length;
+  document.getElementById('pendingBadge').textContent   = pendingContracts.length;
+  document.getElementById('attentionBadge').textContent = attentionContracts.length;
+}
+
+// Supports links from the "new message" notification email:
+// agent-dashboard.html?openContract=X&channel=band|venue|agent
+function _checkContractDeepLink() {
+  var params = new URLSearchParams(window.location.search);
+  var openContract = params.get('openContract');
+  var channel       = params.get('channel');
+  if (!openContract) return;
+
+  var idx = attentionContracts.findIndex(function(c) {
+    return String(c.contractId) === String(openContract) && (!channel || c.channel === channel);
+  });
+  if (idx !== -1) {
+    toggleAttentionCard(idx);
+    setTimeout(function() {
+      var card = document.getElementById('a-card-' + idx);
+      if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 150);
+  } else {
+    showDashToast('That conversation is no longer open — it may have already been handled.', 'error');
+  }
+  if (window.history && window.history.replaceState) {
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+}
+
+// ── Pending review (new bookings, never sent) ───────────────────────────────
+
+function renderPendingList() {
+  var container = document.getElementById('pendingListContainer');
+
+  if (pendingContracts.length === 0) {
+    container.innerHTML =
+      '<div class="empty-state"><div class="empty-icon">&#9989;</div><p>Nothing to review right now. New bookings will show up here automatically.</p></div>';
+    return;
+  }
+
+  var html = '';
+  pendingContracts.forEach(function(c, idx) {
+    html +=
+      '<div class="contract-card" id="p-card-' + idx + '">' +
+        '<div class="contract-card-hdr" onclick="togglePendingCard(' + idx + ')">' +
+          '<div>' +
+            '<div class="contract-card-title">' + escHtml(c.bandName) + ' @ ' + escHtml(c.venueName) + '</div>' +
+            '<div class="contract-card-sub">Booking #' + escHtml(c.bookingId) + '</div>' +
+          '</div>' +
+          '<div class="contract-card-meta">' +
+            '<div class="contract-card-date">' + escHtml(c.date) + '</div>' +
+            '<div class="contract-card-created">Created ' + escHtml(c.createdAt) + '</div>' +
+          '</div>' +
+          '<div class="contract-card-chevron">&#9654;</div>' +
+        '</div>' +
+        '<div class="contract-card-body">' +
+          '<div class="contract-card-body-inner">' +
+            '<div class="contract-meta-row">' +
+              '<div class="contract-meta-item"><div class="label">Band Email</div><div class="value' + (c.bandEmail ? '' : ' missing') + '">' + (c.bandEmail ? escHtml(c.bandEmail) : 'Missing — won\'t be sent') + '</div></div>' +
+              '<div class="contract-meta-item"><div class="label">Venue Email</div><div class="value' + (c.venueEmail ? '' : ' missing') + '">' + (c.venueEmail ? escHtml(c.venueEmail) : 'Missing — won\'t be sent') + '</div></div>' +
+            '</div>' +
+            '<textarea class="contract-textarea" id="contractText-' + idx + '">' + escHtml(c.contractText) + '</textarea>' +
+            '<div class="contract-actions">' +
+              '<button class="btn-collapse" onclick="togglePendingCard(' + idx + ')">Collapse</button>' +
+              '<button class="btn-delete-contract" onclick="deletePendingContract(' + idx + ')">&#128465; Delete</button>' +
+              '<button class="btn-approve" id="approveBtn-' + idx + '" onclick="approveAndSend(' + idx + ')">&#10003; Approve &amp; Send</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+  });
+  container.innerHTML = html;
+}
+
+function togglePendingCard(idx) {
+  toggleAnyContractCard('p-card-' + idx);
+}
+
+async function approveAndSend(idx) {
+  var c = pendingContracts[idx];
+  if (!c) return;
+
+  var textEl = document.getElementById('contractText-' + idx);
+  var finalText = textEl.value;
+
+  if (!c.bandEmail && !c.venueEmail) {
+    showDashToast('Neither the band nor venue has an email on file — nothing to send.', 'error');
+    return;
+  }
+
+  var btn = document.getElementById('approveBtn-' + idx);
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+
+  try {
+    await callApi('api_approveAndSendContract', [c.contractId, finalText, _effectiveAgentId, agentName]);
+    showDashToast('Contract sent to band and venue.');
+    pendingContracts.splice(idx, 1);
+    updateContractStats();
+    renderPendingList();
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = '\u2713 Approve & Send';
+    showDashToast('Error sending contract: ' + e.message, 'error');
+  }
+}
+
+async function deletePendingContract(idx) {
+  var c = pendingContracts[idx];
+  if (!c) return;
+  showConfirmDialog('Delete this contract for ' + c.bandName + ' @ ' + c.venueName + '? This cannot be undone.', function() {
+    _doDeletePendingContract(idx);
+  }, { title: 'Delete Contract', confirmLabel: 'Delete' });
+}
+
+async function _doDeletePendingContract(idx) {
+  var c = pendingContracts[idx];
+  if (!c) return;
+  try {
+    await callApi('api_deleteContract', [c.contractId, agentName]);
+    showDashToast('Contract deleted.');
+    pendingContracts.splice(idx, 1);
+    updateContractStats();
+    renderPendingList();
+  } catch (e) {
+    showDashToast('Error deleting contract: ' + e.message, 'error');
+  }
+}
+
+// ── Needs Attention (open conversations) ────────────────────────────────────
+
+function renderAttentionList() {
+  var container = document.getElementById('attentionListContainer');
+
+  if (attentionContracts.length === 0) {
+    container.innerHTML =
+      '<div class="empty-state"><div class="empty-icon">&#128172;</div><p>No open conversations right now.</p></div>';
+    return;
+  }
+
+  var html = '';
+  var channelLabels = { band: 'Band', venue: 'Venue', agent: 'Booking Agent' };
+  attentionContracts.forEach(function(c, idx) {
+    html +=
+      '<div class="contract-card" id="a-card-' + idx + '">' +
+        '<div class="contract-card-hdr" onclick="toggleAttentionCard(' + idx + ')">' +
+          '<div>' +
+            '<div class="contract-card-title">' + escHtml(c.bandName) + ' @ ' + escHtml(c.venueName) + ' <span class="channel-pill">' + escHtml(channelLabels[c.channel] || c.channel) + '</span></div>' +
+            '<div class="contract-card-sub">Booking #' + escHtml(c.bookingId) + ' &bull; ' + escHtml(c.status) + '</div>' +
+          '</div>' +
+          '<div class="contract-card-meta">' +
+            '<div class="contract-card-date">' + escHtml(c.date) + '</div>' +
+            '<div class="contract-card-created">Last message ' + escHtml(c.lastMessageAt) + '</div>' +
+          '</div>' +
+          '<div class="contract-card-chevron">&#9654;</div>' +
+        '</div>' +
+        '<div class="contract-card-body">' +
+          '<div class="contract-card-body-inner">' +
+            '<div class="msg-thread" id="thread-' + idx + '"><div class="msg-empty">Loading conversation…</div></div>' +
+            '<div class="msg-compose">' +
+              '<textarea class="msg-input" id="reply-' + idx + '" placeholder="Reply without changing the contract…"></textarea>' +
+              '<button class="btn-msg-send" id="replyBtn-' + idx + '" onclick="sendContractReply(' + idx + ')">Reply</button>' +
+            '</div>' +
+            '<div class="revise-label">Or revise the contract and send a new version</div>' +
+            '<textarea class="contract-textarea" id="reviseText-' + idx + '">' + escHtml(c.contractText) + '</textarea>' +
+            '<div class="contract-actions">' +
+              '<button class="btn-collapse" onclick="toggleAttentionCard(' + idx + ')">Collapse</button>' +
+              '<button class="btn-delete-contract" onclick="deleteAttentionContract(' + idx + ')">&#128465; Delete</button>' +
+              '<button class="btn-approve" id="reviseBtn-' + idx + '" onclick="reviseAndSend(' + idx + ')">&#10003; Send Revised Contract</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+  });
+  container.innerHTML = html;
+}
+
+function toggleAttentionCard(idx) {
+  var wasOpening = !document.getElementById('a-card-' + idx).classList.contains('open');
+  toggleAnyContractCard('a-card-' + idx);
+  if (wasOpening) loadContractThread(idx);
+}
+
+function toggleAnyContractCard(cardId) {
+  var card = document.getElementById(cardId);
+  var wasOpen = card.classList.contains('open');
+  document.querySelectorAll('.contract-card.open').forEach(function(c) { c.classList.remove('open'); });
+  if (!wasOpen) card.classList.add('open');
+}
+
+function loadContractThread(idx) {
+  var c = attentionContracts[idx];
+  if (!c) return;
+  callApi('api_getContractMessages', [c.contractId, c.channel]).then(function(msgs) {
+    renderContractThread(idx, msgs || []);
+  }).catch(function() {
+    document.getElementById('thread-' + idx).innerHTML = '<div class="msg-empty">Couldn\'t load the conversation.</div>';
+  });
+}
+
+function renderContractThread(idx, msgs) {
+  var el = document.getElementById('thread-' + idx);
+  var roleNames = { band: 'Band', venue: 'Venue', agent: 'Booking Agent', contractagent: agentName || 'Contract Agent' };
+  if (msgs.length === 0) {
+    el.innerHTML = '<div class="msg-empty">No messages.</div>';
+    return;
+  }
+  el.innerHTML = msgs.map(function(m) {
+    if (m.fromRole === 'contractagent' && m.text.indexOf('Sent a revised contract') === 0) {
+      return '<div class="msg-bubble system">' + escHtml(m.text) + ' &bull; ' + escHtml(m.createdAt) + '</div>';
+    }
+    var cls = m.fromRole === 'contractagent' ? 'mine' : 'theirs';
+    return '<div class="msg-bubble ' + cls + '"><div class="msg-meta">' + escHtml(roleNames[m.fromRole] || m.fromRole) + ' &bull; ' + escHtml(m.createdAt) + '</div>' + escHtml(m.text) + '</div>';
+  }).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+async function sendContractReply(idx) {
+  var c = attentionContracts[idx];
+  if (!c) return;
+  var input = document.getElementById('reply-' + idx);
+  var text = input.value.trim();
+  if (!text) return;
+
+  var btn = document.getElementById('replyBtn-' + idx);
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+
+  try {
+    await callApi('api_postContractMessage', [c.contractId, c.channel, 'contractagent', agentName, text]);
+    input.value = '';
+    loadContractThread(idx);
+    showDashToast('Reply sent.');
+  } catch (e) {
+    showDashToast('Error sending reply: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Reply';
+  }
+}
+
+async function reviseAndSend(idx) {
+  var c = attentionContracts[idx];
+  if (!c) return;
+
+  var textEl = document.getElementById('reviseText-' + idx);
+  var finalText = textEl.value;
+
+  if (!c.bandEmail && !c.venueEmail) {
+    showDashToast('Neither the band nor venue has an email on file — nothing to send.', 'error');
+    return;
+  }
+
+  var btn = document.getElementById('reviseBtn-' + idx);
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+
+  try {
+    await callApi('api_reviseAndResendContract', [c.contractId, finalText, _effectiveAgentId, agentName]);
+    showDashToast('Revised contract sent to band and venue.');
+    attentionContracts.splice(idx, 1);
+    updateContractStats();
+    renderAttentionList();
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = '\u2713 Send Revised Contract';
+    showDashToast('Error sending revised contract: ' + e.message, 'error');
+  }
+}
+
+async function deleteAttentionContract(idx) {
+  var c = attentionContracts[idx];
+  if (!c) return;
+  showConfirmDialog('Delete this contract for ' + c.bandName + ' @ ' + c.venueName + '? This cannot be undone.', function() {
+    _doDeleteAttentionContract(idx);
+  }, { title: 'Delete Contract', confirmLabel: 'Delete' });
+}
+
+async function _doDeleteAttentionContract(idx) {
+  var c = attentionContracts[idx];
+  if (!c) return;
+  try {
+    await callApi('api_deleteContract', [c.contractId, agentName]);
+    showDashToast('Contract deleted.');
+    attentionContracts.splice(idx, 1);
+    updateContractStats();
+    renderAttentionList();
+  } catch (e) {
+    showDashToast('Error deleting contract: ' + e.message, 'error');
+  }
 }
