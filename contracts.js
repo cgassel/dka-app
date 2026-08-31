@@ -12,9 +12,18 @@ var _lastFilteredRows = [];
 
 window.onload = function() {
   var agentId = sessionStorage.getItem('dka_id');
+  var role    = sessionStorage.getItem('dka_role');
   if (!agentId) { window.location.href = 'index.html'; return; }
 
-  callApi('api_getContractsForAgent', [agentId]).then(function(contracts) {
+  // Contract Agents have their own separate ID space (a different sheet
+  // entirely from booking Agents) — filtering by their ID against the
+  // Contracts sheet's "created by booking agent" column would show wrong
+  // or empty data. They see every contract instead.
+  var fetchPromise = (role === 'contractagent')
+    ? callApi('api_getAllContracts', [])
+    : callApi('api_getContractsForAgent', [agentId]);
+
+  fetchPromise.then(function(contracts) {
     allContracts = contracts || [];
     document.getElementById('loadingState').style.display = 'none';
     updateStats();
@@ -154,6 +163,12 @@ function showContractModal(c) {
     html += '</div>';
   }
 
+  if (sessionStorage.getItem('dka_role') === 'contractagent') {
+    html += '<div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">';
+    html += '<button onclick="confirmDeleteContract(\'' + c.contractId + '\', \'' + esc(c.bandName).replace(/'/g,"\\'") + '\', \'' + esc(c.venueName).replace(/'/g,"\\'") + '\')" style="width:100%;padding:12px;background:#fdecea;color:#8B2000;border:1.5px solid #f5c6c0;border-radius:8px;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:inherit;">&#128465; Delete This Contract</button>';
+    html += '</div>';
+  }
+
   document.getElementById('modalTitle').textContent = esc(c.bandName) + ' — ' + esc(c.venueName);
   document.getElementById('modalBody').innerHTML    = html;
   document.getElementById('modalOverlay').classList.add('open');
@@ -229,3 +244,50 @@ function esc(s) {
 }
 
 function goToDashboard() { window.location.href = 'agent-dashboard.html'; }
+
+// ── Delete contract (Contract Agents only — button only renders for them) ──
+var _pendingDeleteContractId = null;
+
+function confirmDeleteContract(contractId, bandName, venueName) {
+  _pendingDeleteContractId = contractId;
+  document.getElementById('deleteConfirmMessage').textContent =
+    'Delete this contract for ' + bandName + ' @ ' + venueName + '? This cannot be undone.';
+  document.getElementById('deleteConfirmOverlay').classList.add('show');
+}
+
+function closeDeleteConfirm() {
+  _pendingDeleteContractId = null;
+  document.getElementById('deleteConfirmOverlay').classList.remove('show');
+}
+
+async function _doDeleteContract() {
+  if (!_pendingDeleteContractId) return;
+  var contractId = _pendingDeleteContractId;
+  var btn = document.getElementById('deleteConfirmBtn');
+  btn.disabled = true;
+  btn.textContent = 'Deleting…';
+
+  try {
+    await callApi('api_deleteContract', [contractId, sessionStorage.getItem('dka_name') || '']);
+    closeDeleteConfirm();
+    closeModal();
+    showContractsToast('Contract deleted.');
+    allContracts = allContracts.filter(function(c) { return String(c.contractId) !== String(contractId); });
+    updateStats();
+    renderTable();
+  } catch (e) {
+    showContractsToast('Error deleting contract: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Delete';
+  }
+}
+
+function showContractsToast(msg, type) {
+  var t = document.getElementById('toastMsg');
+  t.textContent = msg;
+  t.className = 'toast-msg' + (type === 'error' ? ' error' : '');
+  void t.offsetWidth;
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 4000);
+}
